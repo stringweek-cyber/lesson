@@ -16,11 +16,11 @@
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         
-        /* 시간표 박스 디자인: image_3a4599.png 피드백 반영 */
+        /* 시간표 박스 디자인: 모바일 최적화 여백 조정 */
         .timetable-inner-box {
-            margin: 3px;
-            height: calc(100% - 6px);
-            border-radius: 8px;
+            margin: 2px;
+            height: calc(100% - 4px);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -35,7 +35,7 @@
         .has-master-data, .is-modified { background-color: #dbeafe !important; color: #1e40af !important; }
 
         /* 진도표 콤팩트 스타일링 */
-        .compact-table td, .compact-table th { padding: 8px !important; }
+        .compact-table td, .compact-table th { padding: 6px !important; }
         .row-hidden { display: none; }
         .show-hidden-mode .row-hidden { display: table-row; opacity: 0.4; background-color: #f1f5f9; }
 
@@ -43,7 +43,11 @@
         .lunch-divider { border-top: 3px solid #cbd5e1 !important; }
         
         @media (max-width: 640px) {
-            .timetable-slot textarea { font-size: 10px; }
+            /* 모바일에서 월-금 한 화면에 들어오게 폰트 및 패딩 축소 */
+            .timetable-slot textarea { font-size: 9px; line-height: 1.1; padding-top: 4px; }
+            .day-label { font-size: 10px !important; }
+            .date-label { font-size: 8px !important; }
+            .period-label { font-size: 10px !important; width: 30px !important; }
         }
     </style>
 </head>
@@ -70,19 +74,20 @@
 
     <main class="max-w-[1400px] mx-auto p-4 md:p-6 space-y-6">
         <section class="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm">
-            <div class="overflow-x-auto scrollbar-hide">
-                <div id="timetable-grid" class="grid grid-cols-6 gap-0 min-w-[750px]"></div>
-        </div>
-        <div class="px-4 py-2 bg-slate-50 border-t border-slate-100 flex justify-end items-center">
-            <span id="save-indicator" class="text-[10px] font-bold text-blue-500 opacity-0 transition-opacity">저장됨</span>
-        </div>
-    </section>
+            <div class="w-full">
+                <!-- min-w 제거하여 부모 너비(100%)에 맞춤 -->
+                <div id="timetable-grid" class="grid grid-cols-6 gap-0 w-full"></div>
+            </div>
+            <div class="px-4 py-1.5 bg-slate-50 border-t flex justify-end">
+                <span id="save-indicator" class="text-[10px] font-bold text-blue-500 opacity-0 transition-opacity">저장됨</span>
+            </div>
+        </section>
 
-    <div id="sections-container" class="space-y-8"></div>
+        <div id="sections-container" class="space-y-8"></div>
 
-        <div class="flex justify-center pt-8">
-            <button onclick="addNewSection()" class="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl font-bold">
-                <i data-lucide="plus" class="w-5 h-5"></i> 새 진도 테이블 추가 (이벤트)
+        <div class="flex justify-center pt-4">
+            <button onclick="addNewSection()" class="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg active:scale-95 font-bold text-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i> 새 진도 테이블 추가
             </button>
         </div>
     </main>
@@ -95,14 +100,16 @@
         </div>
         <div class="space-y-8">
             <section>
-                <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-blue-600"></i> 학급 명단 (쉼표 구분)</label>
-                <input type="text" id="class-list-input" class="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl outline-none font-bold" placeholder="1-1, 1-2, 1-3...">
+                <label class="block text-sm font-bold text-slate-700 mb-3">학급 명단 (쉼표 구분)</label>
+                <input type="text" id="class-list-input" class="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl outline-none font-bold">
             </section>
             <section>
-                <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i> 마스터 시간표 (기본값)</label>
-                <div class="overflow-x-auto border border-blue-100 rounded-xl"><div id="master-timetable-grid" class="grid grid-cols-6 gap-0 min-w-[450px] bg-white text-[10px]"></div></div>
+                <label class="block text-sm font-bold text-slate-700 mb-3">마스터 시간표 (기본값)</label>
+                <div class="overflow-x-auto border border-blue-100 rounded-xl">
+                    <div id="master-timetable-grid" class="grid grid-cols-6 gap-0 min-w-[450px] bg-white text-[10px]"></div>
+                </div>
             </section>
-            <button onclick="saveGlobalSettings()" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg">저장 및 즉시 적용</button>
+            <button onclick="saveGlobalSettings()" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold">저장 및 즉시 적용</button>
         </div>
     </div>
 
@@ -115,7 +122,7 @@
             selectedSlot: { row: null, col: null },
             editMode: false,
             sections: [
-                { id: 'base', title: '차시별 진도', showHiddenMode: false, rows: [{ title: '기본 차시', isHidden: false, progress: {} }], theme: 'blue' }
+                { title: '차시별 진도', showHiddenMode: false, rows: [{ title: '', isHidden: false, progress: {} }], theme: 'blue' }
             ]
         };
 
@@ -128,7 +135,7 @@
                 state.classes = parsed.classes || state.classes;
                 state.masterTimetable = parsed.masterTimetable || state.masterTimetable;
                 state.weeklyData = parsed.weeklyData || state.weeklyData;
-                if (parsed.sections) state.sections = parsed.sections;
+                state.sections = (parsed.sections && parsed.sections.length > 0) ? parsed.sections : state.sections;
             }
             renderAll();
         }
@@ -146,24 +153,21 @@
 
         function getWeekKey(date) { return getMonday(date).toISOString().split('T')[0]; }
 
+        function changeWeek(days) { state.currentDate.setDate(state.currentDate.getDate() + days); state.selectedSlot = {row:null, col:null}; renderAll(); }
+
         function renderAll() {
-            const mon = getMonday(state.currentDate);
-            const fri = new Date(mon);
-            fri.setDate(mon.getDate() + 4);
-            document.getElementById('current-week-display').innerText = `${mon.getFullYear()}.${mon.getMonth() + 1}.${mon.getDate()}(월) - ${fri.getMonth() + 1}.${fri.getDate()}(금)`;
+            updateDateDisplay();
             renderTimetable();
             renderSections();
             lucide.createIcons();
         }
 
-        function changeWeek(days) { state.currentDate.setDate(state.currentDate.getDate() + days); state.selectedSlot = {row:null, col:null}; renderAll(); }
-
-        function toggleEditMode() {
-            state.editMode = !state.editMode;
-            document.getElementById('edit-mode-btn').innerText = state.editMode ? "수정 완료" : "시간표 직접 수정";
-            document.getElementById('edit-mode-btn').classList.toggle('bg-red-500', state.editMode);
-            document.getElementById('edit-mode-btn').classList.toggle('text-white', state.editMode);
-            renderTimetable();
+        function updateDateDisplay() {
+            const mon = getMonday(state.currentDate);
+            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+            const f = (d) => `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+            const fShort = (d) => `${d.getMonth() + 1}.${d.getDate()}`;
+            document.getElementById('current-week-display').innerText = `${f(mon)}(월) - ${fShort(fri)}(금)`;
         }
 
         function renderTimetable() {
@@ -173,32 +177,32 @@
             const displayTable = isWeeklyModified ? state.weeklyData[weekKey].timetable : state.masterTimetable;
             const mon = getMonday(state.currentDate);
 
-            let html = `<div class="h-10 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r">교시</div>`;
+            // 교시 컬럼 너비를 최소화하여 요일 컬럼 공간 확보
+            let html = `<div class="h-10 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r period-label">교시</div>`;
             DAYS.forEach((day, i) => {
                 const d = new Date(mon); d.setDate(mon.getDate() + i);
                 html += `<div class="h-10 flex flex-col items-center justify-center border-b border-r bg-slate-50">
-                    <span class="text-[11px] font-extrabold text-blue-500 leading-none">${d.getMonth()+1}.${d.getDate()}</span>
-                    <span class="text-[11px] font-bold text-slate-600">${day}</span>
+                    <span class="text-[11px] font-extrabold text-blue-500 leading-none date-label">${d.getMonth()+1}.${d.getDate()}</span>
+                    <span class="text-[11px] font-bold text-slate-600 day-label">${day}</span>
                 </div>`;
             });
 
             for (let i = 0; i < 7; i++) {
                 const lunchLine = i === 4 ? 'lunch-divider' : '';
-                html += `<div class="h-14 flex items-center justify-center text-[11px] font-bold text-slate-400 border-r border-b ${lunchLine}">${i+1}</div>`;
+                html += `<div class="h-14 flex items-center justify-center text-[11px] font-bold text-slate-400 border-r border-b period-label ${lunchLine}">${i+1}</div>`;
                 for (let j = 0; j < 5; j++) {
                     const content = displayTable[i][j];
                     const hasContent = content && content.trim() !== '';
                     const isSelected = state.selectedSlot.row === i && state.selectedSlot.col === j;
                     
-                    // 색상은 항상 푸른색 테마 유지
                     const cellColor = hasContent ? "has-master-data" : "";
 
                     html += `
-                        <div class="h-14 border-r border-b relative ${lunchLine}" onclick="selectSlot(${i}, ${j})">
+                        <div class="h-14 border-r border-b relative timetable-slot ${lunchLine}" onclick="selectSlot(${i}, ${j})">
                             <div class="timetable-inner-box ${cellColor} ${isSelected ? 'is-selected' : ''}">
                                 ${state.editMode ? 
                                     `<textarea oninput="updateSlot(${i}, ${j}, this.value)" class="w-full h-full bg-transparent text-[11px] font-bold text-center resize-none outline-none pt-2">${content || ''}</textarea>` :
-                                    `<span class="text-[11px] font-bold text-center px-1 whitespace-pre-wrap">${content || ''}</span>`
+                                    `<span class="text-[10px] font-bold text-center px-0.5 whitespace-pre-wrap break-all leading-tight">${content || ''}</span>`
                                 }
                             </div>
                         </div>`;
@@ -214,6 +218,13 @@
             if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
             state.weeklyData[weekKey].timetable[r][c] = val;
             saveToLocal();
+        }
+
+        function toggleEditMode() {
+            state.editMode = !state.editMode;
+            document.getElementById('edit-mode-btn').innerText = state.editMode ? "수정 완료" : "시간표 직접 수정";
+            state.selectedSlot = {row:null, col:null};
+            renderTimetable();
         }
 
         function renderSections() {
