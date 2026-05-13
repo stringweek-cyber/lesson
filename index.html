@@ -16,7 +16,7 @@
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         
-        /* 시간표 박스 디자인: 모바일 최적화 여백 조정 */
+        /* 시간표 박스 디자인: image_3a4599.png 대응 */
         .timetable-inner-box {
             margin: 2px;
             height: calc(100% - 4px);
@@ -29,15 +29,28 @@
         }
 
         /* 선택된 칸 테두리: image_39655c.png 피드백 반영 */
-        .is-selected { border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .is-selected {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
         
         /* 색상은 항상 푸른색 계열 유지 */
-        .has-master-data, .is-modified { background-color: #dbeafe !important; color: #1e40af !important; }
+        .has-master-data, .is-modified {
+            background-color: #dbeafe !important;
+            color: #1e40af !important;
+        }
 
         /* 진도표 콤팩트 스타일링 */
-        .compact-table td, .compact-table th { padding: 6px !important; }
+        .compact-table td, .compact-table th {
+            padding: 6px !important;
+        }
+        
         .row-hidden { display: none; }
-        .show-hidden-mode .row-hidden { display: table-row; opacity: 0.4; background-color: #f1f5f9; }
+        .show-hidden-mode .row-hidden { 
+            display: table-row; 
+            opacity: 0.4;
+            background-color: #f1f5f9;
+        }
 
         /* 4교시-5교시 구분선 */
         .lunch-divider { border-top: 3px solid #cbd5e1 !important; }
@@ -45,9 +58,9 @@
         @media (max-width: 640px) {
             /* 모바일에서 월-금 한 화면에 들어오게 폰트 및 패딩 축소 */
             .timetable-slot textarea { font-size: 9px; line-height: 1.1; padding-top: 4px; }
-            .day-label { font-size: 10px !important; }
-            .date-label { font-size: 8px !important; }
-            .period-label { font-size: 10px !important; width: 30px !important; }
+            .day-label { font-size: 13px !important; }
+            .date-label { font-size: 11px !important; }
+            .period-label { font-size: 11px !important; width: 35px !important; }
         }
     </style>
 </head>
@@ -83,8 +96,10 @@
     <main class="max-w-[1400px] mx-auto p-4 md:p-6 space-y-6">
         <section class="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm">
             <div class="w-full">
-                <!-- min-w 제거하여 부모 너비(100%)에 맞춤 -->
-                <div id="timetable-grid" class="grid grid-cols-6 gap-0 w-full"></div>
+                <!-- image_387f63.png의 흰 여백 해결을 위해 grid-template-columns를 JS에서 직접 제어함 -->
+                <div id="timetable-grid" class="grid gap-0 w-full" style="display: grid; grid-template-columns: 35px repeat(5, 1fr);">
+                    <!-- JS에서 렌더링 -->
+                </div>
             </div>
             <div class="px-4 py-1.5 bg-slate-50 border-t flex justify-end">
                 <span id="save-indicator" class="text-[10px] font-bold text-blue-500 opacity-0 transition-opacity">저장됨</span>
@@ -185,16 +200,16 @@
             const displayTable = isWeeklyModified ? state.weeklyData[weekKey].timetable : state.masterTimetable;
             const mon = getMonday(state.currentDate);
 
-            // 교시 컬럼 너비를 최소화하여 요일 컬럼 공간 확보
-            let html = `<div class="h-10 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r period-label">교시</div>`;
+            // image_387f63.png 해결: div 구조를 확실히 하고 6열 그리드를 유지함
+            let html = `<div class="h-12 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r period-label">교시</div>`;
             
             DAYS.forEach((day, i) => {
                 const d = new Date(mon);
                 d.setDate(mon.getDate() + i);
                 html += `
-                    <div class="h-10 flex flex-col items-center justify-center border-b border-r bg-slate-50">
-                        <span class="text-[11px] font-extrabold text-blue-500 leading-none date-label">${d.getMonth()+1}.${d.getDate()}</span>
-                        <span class="text-[10px] font-bold text-slate-600 day-label">${day}</span>
+                    <div class="h-12 flex flex-col items-center justify-center border-b border-r bg-slate-50">
+                        <span class="text-[11px] font-black text-blue-500 leading-none date-label">${d.getMonth()+1}.${d.getDate()}</span>
+                        <span class="text-[13px] font-extrabold text-slate-600 day-label">${day}</span>
                     </div>`;
             });
 
@@ -205,7 +220,6 @@
                     const content = displayTable[i][j];
                     const hasContent = content && content.trim() !== '';
                     const isSelected = state.selectedSlot.row === i && state.selectedSlot.col === j;
-                    
                     const cellColor = hasContent ? "has-master-data" : "";
 
                     html += `
@@ -241,7 +255,7 @@
         function renderSections() {
             const container = document.getElementById('sections-container');
             if (state.sections.length === 0) {
-                container.innerHTML = `<div class="text-center py-20 text-slate-400 font-medium italic">차시 관리를 위해 아래 버튼을 눌러 테이블을 추가해주세요.</div>`;
+                container.innerHTML = `<div class="text-center py-20 text-slate-400 font-medium italic">테이블을 추가해주세요.</div>`;
                 return;
             }
 
@@ -254,9 +268,9 @@
 
                 return `
                 <div class="bg-white rounded-2xl border border-${themeColor}-100 overflow-hidden shadow-sm ${isShowMode ? 'show-hidden-mode' : ''}">
-                    <div class="px-4 py-2 border-b flex flex-wrap justify-between items-center ${headerBg} gap-2">
+                    <div class="px-4 py-1.5 border-b flex flex-wrap justify-between items-center ${headerBg} gap-2">
                         <input type="text" value="${section.title}" onchange="state.sections[${sIdx}].title=this.value; saveToLocal();"
-                               class="text-xs font-bold bg-transparent outline-none border-b-2 border-transparent focus:border-blue-400 transition-all text-slate-800">
+                               class="text-[13px] font-bold bg-transparent outline-none border-b-2 border-transparent focus:border-blue-400 transition-all text-slate-800">
                         
                         <div class="flex items-center gap-2">
                             ${hiddenCount > 0 ? `
@@ -273,8 +287,8 @@
                         <table class="compact-table w-full border-collapse">
                             <thead>
                                 <tr class="bg-slate-50/50 border-b border-slate-100">
-                                    <th class="w-48 text-left px-4 py-3 text-[11px] font-bold text-slate-400 uppercase">차시</th>
-                                    ${state.classes.map(c => `<th class="text-center px-2 py-3 text-sm font-extrabold text-slate-700 border-l border-slate-100/50">${c}</th>`).join('')}
+                                    <th class="w-[45%] text-left px-4 py-3 text-[11px] font-bold text-slate-400 uppercase">차시</th>
+                                    ${state.classes.map(c => `<th class="text-center px-1 py-3 text-sm font-extrabold text-slate-700 border-l border-slate-100/50">${c}</th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody>
@@ -282,7 +296,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="p-3 bg-slate-50/30 border-t border-slate-100">
+                    <div class="p-2 bg-slate-50/30 border-t border-slate-100">
                         <button onclick="addRow(${sIdx})" class="flex items-center gap-1 text-[10px] font-bold text-${themeColor}-600 hover:text-${themeColor}-800 transition-all">
                             <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> 행 추가
                         </button>
@@ -323,8 +337,6 @@
             if (!row.progress[className]) row.progress[className] = { done: false, memo: '' };
             row.progress[className].done = !row.progress[className].done;
 
-            // 핵심: sIdx === 0 (첫 번째 '차시별 진도' 섹션)일 때만 시간표 자동 연동 실행
-            // '이벤트' 등 추가된 섹션은 시간표에 영향을 주지 않음
             if (sIdx === 0 && row.progress[className].done && state.selectedSlot.row !== null) {
                 const weekKey = getWeekKey(state.currentDate);
                 if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
@@ -332,7 +344,6 @@
                 const prevVal = state.weeklyData[weekKey].timetable[state.selectedSlot.row][state.selectedSlot.col];
                 const addVal = row.title || '수업';
                 
-                // 기존 내용이 이미 해당 차시를 포함하고 있지 않을 때만 추가
                 if (!prevVal || !prevVal.includes(addVal)) {
                     state.weeklyData[weekKey].timetable[state.selectedSlot.row][state.selectedSlot.col] = 
                         prevVal ? `${prevVal}\n${addVal}` : addVal;
