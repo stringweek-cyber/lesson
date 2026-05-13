@@ -6,7 +6,7 @@
     <title>진도표 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif;
@@ -16,53 +16,32 @@
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         
-        .lunch-divider { border-top: 2px solid #cbd5e1 !important; }
-        
-        /* 연결 수업 구분용 내부 박스 스타일 */
+        /* 시간표 박스 디자인: image_3a4599.png 피드백 반영 */
         .timetable-inner-box {
+            margin: 3px;
+            height: calc(100% - 6px);
             border-radius: 8px;
-            margin: 2px;
-            height: calc(100% - 4px);
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
 
-        /* 마스터 데이터 및 주간 변동 데이터 배경색 */
-        .has-master-data-box { background-color: #dbeafe !important; border: 1px solid #bfdbfe; color: #1e40af; }
-        .is-modified-box { background-color: #fee2e2 !important; border: 1px solid #fecaca; color: #991b1b; }
-
-        .table-input {
-            border: none;
-            background: transparent;
-            width: 100%;
-            font-size: 0.85rem;
-            padding: 4px;
-            outline: none;
-        }
-
-        .row-hidden { display: none; }
-        .show-hidden-mode .row-hidden { 
-            display: table-row; 
-            opacity: 0.4;
-            background-color: #f8fafc;
-        }
-
-        /* 진도 테이블 표 스타일 최적화 */
-        .progress-table th, .progress-table td {
-            border: 1px solid #e2e8f0;
-            padding: 4px 8px !important;
-        }
-
-        /* 테마별 헤더 배경 (image_39cab5.png 참고) */
-        .theme-blue { border-color: #dbeafe !important; }
-        .theme-blue .section-header { background-color: #f0f7ff !important; }
+        /* 선택된 칸 테두리: image_39655c.png 피드백 반영 */
+        .is-selected { border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         
-        .theme-red { border-color: #fecaca !important; }
-        .theme-red .section-header { background-color: #fef2f2 !important; }
-        .theme-red .add-row-btn { color: #dc2626 !important; }
+        /* 색상은 항상 푸른색 계열 유지 */
+        .has-master-data, .is-modified { background-color: #dbeafe !important; color: #1e40af !important; }
 
+        /* 진도표 콤팩트 스타일링 */
+        .compact-table td, .compact-table th { padding: 8px !important; }
+        .row-hidden { display: none; }
+        .show-hidden-mode .row-hidden { display: table-row; opacity: 0.4; background-color: #f1f5f9; }
+
+        /* 4교시-5교시 구분선 */
+        .lunch-divider { border-top: 3px solid #cbd5e1 !important; }
+        
         @media (max-width: 640px) {
             .timetable-slot textarea { font-size: 10px; }
         }
@@ -71,69 +50,59 @@
 <body class="min-h-screen pb-20">
 
     <header class="bg-white border-b border-blue-100 shadow-sm sticky top-0 z-30">
-        <div class="max-w-[1400px] mx-auto px-4 py-2 md:px-6">
-            <div class="flex justify-between items-center gap-4">
-                <div class="flex items-center gap-4">
-                    <h1 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                        <i data-lucide="check-square" class="text-blue-600 w-5 h-5"></i> 진도표
-                    </h1>
-                    <div class="flex items-center bg-blue-50 rounded-lg p-1 border border-blue-100 scale-90 md:scale-100">
-                        <button onclick="changeWeek(-7)" class="p-1 hover:bg-white rounded-md transition-all active:scale-90">
-                            <i data-lucide="chevron-left" class="w-4 h-4 text-blue-600"></i>
-                        </button>
-                        <span id="current-week-display" class="px-3 text-xs font-bold text-slate-700 min-w-[160px] text-center tracking-tight"></span>
-                        <button onclick="changeWeek(7)" class="p-1 hover:bg-white rounded-md transition-all active:scale-90">
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-blue-600"></i>
-                        </button>
-                    </div>
+        <div class="max-w-[1400px] mx-auto px-4 py-3 md:px-6 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="check-square" class="text-blue-500 w-6 h-6"></i> 진도표
+                </h1>
+                <div class="flex items-center bg-blue-50 rounded-xl p-1 border border-blue-100">
+                    <button onclick="changeWeek(-7)" class="p-1.5 hover:bg-white rounded-lg transition-all"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-600"></i></button>
+                    <span id="current-week-display" class="px-4 text-sm font-bold text-slate-700 min-w-[200px] text-center"></span>
+                    <button onclick="changeWeek(7)" class="p-1.5 hover:bg-white rounded-lg transition-all"><i data-lucide="chevron-right" class="w-4 h-4 text-blue-600"></i></button>
                 </div>
-                <button onclick="toggleSettings()" class="p-2 hover:bg-blue-50 rounded-lg transition-all">
-                    <i data-lucide="menu" class="w-6 h-6 text-slate-600"></i>
-                </button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="edit-mode-btn" onclick="toggleEditMode()" class="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">시간표 직접 수정</button>
+                <button onclick="toggleSettings()" class="p-2 hover:bg-blue-50 rounded-xl transition-all"><i data-lucide="menu" class="w-7 h-7 text-slate-600"></i></button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-[1400px] mx-auto p-4 space-y-6">
-        <!-- 시간표 섹션 -->
-        <section class="bg-white rounded-2xl border border-blue-100 overflow-hidden shadow-sm">
+    <main class="max-w-[1400px] mx-auto p-4 md:p-6 space-y-6">
+        <section class="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm">
             <div class="overflow-x-auto scrollbar-hide">
-                <div id="timetable-grid" class="grid grid-cols-6 gap-0 min-w-[700px]"></div>
-            </div>
-            <div class="px-4 py-1 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <span id="save-indicator" class="text-[9px] font-bold text-blue-500 opacity-0 transition-opacity">자동 저장됨</span>
-            </div>
-        </section>
+                <div id="timetable-grid" class="grid grid-cols-6 gap-0 min-w-[750px]"></div>
+        </div>
+        <div class="px-4 py-2 bg-slate-50 border-t border-slate-100 flex justify-end items-center">
+            <span id="save-indicator" class="text-[10px] font-bold text-blue-500 opacity-0 transition-opacity">저장됨</span>
+        </div>
+    </section>
 
-        <!-- 진도표 컨테이너 -->
-        <div id="sections-container" class="space-y-6"></div>
+    <div id="sections-container" class="space-y-8"></div>
 
-        <div class="flex justify-center pt-4">
-            <button onclick="addNewSection()" class="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-black transition-all shadow-lg active:scale-95 text-sm font-bold">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                새로운 이벤트 테이블 추가
+        <div class="flex justify-center pt-8">
+            <button onclick="addNewSection()" class="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl font-bold">
+                <i data-lucide="plus" class="w-5 h-5"></i> 새 진도 테이블 추가 (이벤트)
             </button>
         </div>
     </main>
 
-    <div id="settings-overlay" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40 hidden" onclick="toggleSettings()"></div>
+    <div id="settings-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden" onclick="toggleSettings()"></div>
     <div id="settings-sidebar" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-out overflow-y-auto p-6">
-        <div class="flex justify-between items-center mb-6 pb-4 border-b">
-            <h2 class="text-lg font-bold">환경 설정</h2>
+        <div class="flex justify-between items-center mb-8 pb-4 border-b">
+            <h2 class="text-xl font-bold">환경 설정</h2>
             <button onclick="toggleSettings()" class="p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <div class="space-y-6">
+        <div class="space-y-8">
             <section>
-                <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-2"><i data-lucide="users" class="w-3 h-3 text-blue-600"></i> 학급 명단 (쉼표 구분)</label>
-                <input type="text" id="class-list-input" class="w-full px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg outline-none font-bold text-sm" placeholder="1-1, 1-2, 1-3...">
+                <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-blue-600"></i> 학급 명단 (쉼표 구분)</label>
+                <input type="text" id="class-list-input" class="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl outline-none font-bold" placeholder="1-1, 1-2, 1-3...">
             </section>
             <section>
-                <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-2 text-indigo-600"><i data-lucide="calendar" class="w-3 h-3"></i> 마스터 시간표 (기본 틀)</label>
-                <div class="overflow-x-auto border border-blue-100 rounded-lg">
-                    <div id="master-timetable-grid" class="grid grid-cols-6 gap-0 min-w-[400px] bg-white"></div>
-                </div>
+                <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i> 마스터 시간표 (기본값)</label>
+                <div class="overflow-x-auto border border-blue-100 rounded-xl"><div id="master-timetable-grid" class="grid grid-cols-6 gap-0 min-w-[450px] bg-white text-[10px]"></div></div>
             </section>
-            <button onclick="saveGlobalSettings()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md text-sm">설정 저장 및 적용</button>
+            <button onclick="saveGlobalSettings()" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg">저장 및 즉시 적용</button>
         </div>
     </div>
 
@@ -143,33 +112,28 @@
             currentDate: new Date(),
             masterTimetable: Array(7).fill().map(() => Array(5).fill('')),
             weeklyData: {}, 
+            selectedSlot: { row: null, col: null },
+            editMode: false,
             sections: [
-                {
-                    title: '차시별 진도',
-                    theme: 'blue',
-                    showHiddenMode: false,
-                    rows: [{ title: '', isHidden: false, progress: {} }]
-                }
+                { id: 'base', title: '차시별 진도', showHiddenMode: false, rows: [{ title: '기본 차시', isHidden: false, progress: {} }], theme: 'blue' }
             ]
         };
 
         const DAYS = ['월', '화', '수', '목', '금'];
 
         function init() {
-            const saved = localStorage.getItem('progress_tracker_v7');
+            const saved = localStorage.getItem('progress_tracker_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 state.classes = parsed.classes || state.classes;
                 state.masterTimetable = parsed.masterTimetable || state.masterTimetable;
                 state.weeklyData = parsed.weeklyData || state.weeklyData;
-                state.sections = (parsed.sections && parsed.sections.length > 0) ? parsed.sections : state.sections;
+                if (parsed.sections) state.sections = parsed.sections;
             }
             renderAll();
         }
 
-        function saveToLocal() {
-            localStorage.setItem('progress_tracker_v7', JSON.stringify(state));
-        }
+        function saveToLocal() { localStorage.setItem('progress_tracker_final', JSON.stringify(state)); }
 
         function getMonday(date) {
             const d = new Date(date);
@@ -182,25 +146,24 @@
 
         function getWeekKey(date) { return getMonday(date).toISOString().split('T')[0]; }
 
-        function changeWeek(days) {
-            state.currentDate.setDate(state.currentDate.getDate() + days);
-            renderAll();
-        }
-
         function renderAll() {
-            updateDateDisplay();
+            const mon = getMonday(state.currentDate);
+            const fri = new Date(mon);
+            fri.setDate(mon.getDate() + 4);
+            document.getElementById('current-week-display').innerText = `${mon.getFullYear()}.${mon.getMonth() + 1}.${mon.getDate()}(월) - ${fri.getMonth() + 1}.${fri.getDate()}(금)`;
             renderTimetable();
             renderSections();
             lucide.createIcons();
         }
 
-        function updateDateDisplay() {
-            const mon = getMonday(state.currentDate);
-            const fri = new Date(mon);
-            fri.setDate(mon.getDate() + 4);
-            const f = (d) => `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
-            const fShort = (d) => `${d.getMonth() + 1}.${d.getDate()}`;
-            document.getElementById('current-week-display').innerText = `${f(mon)}(월) - ${fShort(fri)}(금)`;
+        function changeWeek(days) { state.currentDate.setDate(state.currentDate.getDate() + days); state.selectedSlot = {row:null, col:null}; renderAll(); }
+
+        function toggleEditMode() {
+            state.editMode = !state.editMode;
+            document.getElementById('edit-mode-btn').innerText = state.editMode ? "수정 완료" : "시간표 직접 수정";
+            document.getElementById('edit-mode-btn').classList.toggle('bg-red-500', state.editMode);
+            document.getElementById('edit-mode-btn').classList.toggle('text-white', state.editMode);
+            renderTimetable();
         }
 
         function renderTimetable() {
@@ -212,127 +175,147 @@
 
             let html = `<div class="h-10 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r">교시</div>`;
             DAYS.forEach((day, i) => {
-                const d = new Date(mon);
-                d.setDate(mon.getDate() + i);
+                const d = new Date(mon); d.setDate(mon.getDate() + i);
                 html += `<div class="h-10 flex flex-col items-center justify-center border-b border-r bg-slate-50">
-                    <span class="text-[11px] text-blue-500 font-extrabold leading-none mb-0.5">${d.getMonth()+1}.${d.getDate()}</span>
-                    <span class="text-[10px] font-bold text-slate-500">${day}</span>
+                    <span class="text-[11px] font-extrabold text-blue-500 leading-none">${d.getMonth()+1}.${d.getDate()}</span>
+                    <span class="text-[11px] font-bold text-slate-600">${day}</span>
                 </div>`;
             });
 
             for (let i = 0; i < 7; i++) {
-                const lunchClass = i === 4 ? 'lunch-divider' : '';
-                html += `<div class="h-12 flex items-center justify-center text-[10px] font-bold text-slate-400 border-r border-b ${lunchClass}">${i+1}</div>`;
+                const lunchLine = i === 4 ? 'lunch-divider' : '';
+                html += `<div class="h-14 flex items-center justify-center text-[11px] font-bold text-slate-400 border-r border-b ${lunchLine}">${i+1}</div>`;
                 for (let j = 0; j < 5; j++) {
                     const content = displayTable[i][j];
                     const hasContent = content && content.trim() !== '';
-                    const isOriginal = state.masterTimetable[i][j] === content;
-                    const boxClass = hasContent ? (isOriginal ? "has-master-data-box" : "is-modified-box") : "";
-                    html += `<div class="timetable-slot h-12 border-r border-b ${lunchClass} p-0">
-                        <div class="timetable-inner-box ${boxClass}" id="cell-box-${i}-${j}">
-                            <textarea oninput="handleTimeInput(${i}, ${j}, this)" class="w-full h-full bg-transparent text-[10px] font-bold text-center resize-none outline-none overflow-hidden pt-1.5">${content || ''}</textarea>
-                        </div>
-                    </div>`;
+                    const isSelected = state.selectedSlot.row === i && state.selectedSlot.col === j;
+                    
+                    // 색상은 항상 푸른색 테마 유지
+                    const cellColor = hasContent ? "has-master-data" : "";
+
+                    html += `
+                        <div class="h-14 border-r border-b relative ${lunchLine}" onclick="selectSlot(${i}, ${j})">
+                            <div class="timetable-inner-box ${cellColor} ${isSelected ? 'is-selected' : ''}">
+                                ${state.editMode ? 
+                                    `<textarea oninput="updateSlot(${i}, ${j}, this.value)" class="w-full h-full bg-transparent text-[11px] font-bold text-center resize-none outline-none pt-2">${content || ''}</textarea>` :
+                                    `<span class="text-[11px] font-bold text-center px-1 whitespace-pre-wrap">${content || ''}</span>`
+                                }
+                            </div>
+                        </div>`;
                 }
             }
             grid.innerHTML = html;
         }
 
-        function handleTimeInput(row, col, el) {
-            const val = el.value;
+        function selectSlot(r, c) { if(!state.editMode) { state.selectedSlot = {row: r, col: c}; renderTimetable(); } }
+
+        function updateSlot(r, c, val) {
             const weekKey = getWeekKey(state.currentDate);
-            if (!state.weeklyData[weekKey]) {
-                state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
-            }
-            state.weeklyData[weekKey].timetable[row][col] = val;
-            const box = document.getElementById(`cell-box-${row}-${col}`);
-            const isOriginal = state.masterTimetable[row][col] === val;
-            if (val.trim() === '') box.className = 'timetable-inner-box';
-            else box.className = `timetable-inner-box ${isOriginal ? 'has-master-data-box' : 'is-modified-box'}`;
+            if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
+            state.weeklyData[weekKey].timetable[r][c] = val;
             saveToLocal();
-            const indicator = document.getElementById('save-indicator');
-            indicator.style.opacity = '1';
-            setTimeout(() => indicator.style.opacity = '0', 800);
         }
 
         function renderSections() {
             const container = document.getElementById('sections-container');
             container.innerHTML = state.sections.map((section, sIdx) => {
-                const themeClass = section.theme === 'red' ? 'theme-red' : 'theme-blue';
+                const isBase = sIdx === 0;
                 const hiddenCount = section.rows.filter(r => r.isHidden).length;
-                const isShowMode = section.showHiddenMode;
+                const themeColor = section.theme === 'red' ? 'rose' : 'blue';
+                const headerBg = isBase ? 'bg-blue-50/80' : 'bg-rose-50/80';
 
-                return `<div class="bg-white rounded-2xl border ${themeClass} overflow-hidden shadow-sm ${isShowMode ? 'show-hidden-mode' : ''}">
-                    <div class="section-header px-4 py-2.5 border-b flex justify-between items-center transition-colors">
-                        <input type="text" value="${section.title}" onchange="state.sections[${sIdx}].title=this.value; saveToLocal();" class="text-sm font-extrabold bg-transparent outline-none text-slate-800">
+                return `
+                <div class="bg-white rounded-2xl border border-${themeColor}-100 overflow-hidden shadow-sm ${section.showHiddenMode ? 'show-hidden-mode' : ''}">
+                    <div class="px-5 py-4 border-b flex justify-between items-center ${headerBg}">
+                        <input type="text" value="${section.title}" onchange="state.sections[${sIdx}].title=this.value; saveToLocal();" class="font-black text-lg bg-transparent outline-none">
                         <div class="flex items-center gap-2">
-                            ${hiddenCount > 0 ? `<button onclick="toggleShowHiddenMode(${sIdx})" class="text-[9px] font-bold px-2 py-1 rounded-lg ${isShowMode ? 'bg-slate-800 text-white' : 'bg-blue-50 text-blue-600'} transition-all">${isShowMode ? '보기 끄기' : `숨김(${hiddenCount})`}</button>` : ''}
-                            ${sIdx !== 0 ? `<button onclick="removeSection(${sIdx})" class="p-1.5 text-slate-300 hover:text-red-500 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                            ${hiddenCount > 0 ? `<button onclick="toggleShowHiddenMode(${sIdx})" class="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-white border border-slate-200">숨김(${hiddenCount})</button>` : ''}
+                            ${!isBase ? `<button onclick="removeSection(${sIdx})" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
                         </div>
                     </div>
-                    <div class="overflow-x-auto scrollbar-hide">
-                        <table class="progress-table w-full border-collapse">
-                            <thead><tr class="bg-slate-50/50">
-                                <th class="w-[200px] text-left text-[10px] font-bold text-slate-400 p-2">수업 차시</th>
-                                ${state.classes.map(c => `<th class="text-center text-[10px] font-extrabold text-slate-600 p-2">${c}</th>`).join('')}
-                                <th class="w-8"></th>
-                            </tr></thead>
-                            <tbody>${section.rows.map((row, rIdx) => renderTableRow(sIdx, rIdx, row)).join('')}</tbody>
-                        </table>
-                    </div>
-                    <div class="px-4 py-2 border-t border-slate-50">
-                        <button onclick="addRow(${sIdx})" class="add-row-btn flex items-center gap-1.5 text-xs font-bold text-blue-600 transition-all"><i data-lucide="plus-circle" class="w-4 h-4"></i> 행 추가</button>
-                    </div>
+                    <div class="overflow-x-auto scrollbar-hide"><table class="compact-table w-full text-sm">
+                        <thead class="bg-slate-50/50 text-[11px] font-bold text-slate-400"><tr>
+                            <th class="text-left w-48 px-4">차시</th>
+                            ${state.classes.map(c => `<th class="text-center">${c}</th>`).join('')}
+                            <th class="w-10"></th>
+                        </tr></thead>
+                        <tbody>${section.rows.map((row, rIdx) => renderRow(sIdx, rIdx, row)).join('')}</tbody>
+                    </table></div>
+                    <div class="p-4 bg-slate-50/30 border-t"><button onclick="addRow(${sIdx})" class="text-xs font-bold text-${themeColor}-600 flex items-center gap-1"><i data-lucide="plus-circle" class="w-4 h-4"></i> 행 추가</button></div>
                 </div>`;
             }).join('');
             lucide.createIcons();
         }
 
-        function renderTableRow(sIdx, rIdx, row) {
-            const hiddenClass = row.isHidden ? 'row-hidden' : '';
-            return `<tr class="${hiddenClass} border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                <td class="p-1">
-                    <div class="flex items-center gap-2">
-                        <button onclick="toggleRowHidden(${sIdx}, ${rIdx})" class="p-1 ${row.isHidden ? 'text-blue-500' : 'text-slate-200 hover:text-blue-500'} rounded transition-all"><i data-lucide="${row.isHidden ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
-                        <input type="text" value="${row.title}" onchange="state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" class="table-input font-bold text-slate-700 text-xs py-1" placeholder="차시명...">
-                    </div>
+        function renderRow(sIdx, rIdx, row) {
+            return `<tr class="${row.isHidden ? 'row-hidden' : ''} border-b border-slate-50">
+                <td class="flex items-center gap-2">
+                    <button onclick="toggleRowHidden(${sIdx}, ${rIdx})" class="p-1.5 text-slate-200 hover:text-blue-500"><i data-lucide="${row.isHidden ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
+                    <input type="text" value="${row.title}" onchange="state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" class="w-full bg-transparent outline-none font-semibold text-slate-700">
                 </td>
-                ${state.classes.map(className => {
-                    const prog = row.progress[className] || { done: false, memo: '' };
-                    return `<td class="p-1 text-center align-top min-w-[100px]">
-                        <div class="flex flex-col gap-1 items-center">
-                            <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${className}')" class="w-16 h-7 rounded-lg flex items-center justify-center transition-all ${prog.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-transparent hover:border-blue-300'}"><i data-lucide="check" class="w-4 h-4"></i></button>
-                            <textarea onchange="updateMemo(${sIdx}, ${rIdx}, '${className}', this.value)" class="w-full text-[9px] h-10 resize-none bg-blue-50/30 hover:bg-white border border-transparent rounded-md p-1 outline-none font-medium leading-tight" placeholder="메모...">${prog.memo || ''}</textarea>
+                ${state.classes.map(cls => {
+                    const p = row.progress[cls] || {done:false, memo:''};
+                    return `<td class="text-center">
+                        <div class="flex flex-col items-center gap-2">
+                            <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${cls}')" class="w-16 h-7 rounded-lg flex items-center justify-center transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-transparent hover:border-blue-500'}">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                            </button>
+                            <textarea onchange="updateMemo(${sIdx}, ${rIdx}, '${cls}', this.value)" class="w-full h-10 text-[10px] bg-slate-50 rounded-lg p-1.5 outline-none resize-none" placeholder="메모...">${p.memo || ''}</textarea>
                         </div>
                     </td>`;
                 }).join('')}
-                <td class="p-1 text-center"><button onclick="removeRow(${sIdx}, ${rIdx})" class="text-slate-200 hover:text-red-500 transition-all"><i data-lucide="minus-circle" class="w-4 h-4"></i></button></td>
+                <td><button onclick="removeRow(${sIdx}, ${rIdx})" class="text-slate-200 hover:text-red-500 p-2"><i data-lucide="minus-circle" class="w-4 h-4"></i></button></td>
             </tr>`;
         }
 
+        function toggleProgress(sIdx, rIdx, className) {
+            const row = state.sections[sIdx].rows[rIdx];
+            if (!row.progress[className]) row.progress[className] = { done: false, memo: '' };
+            row.progress[className].done = !row.progress[className].done;
+
+            // 핵심: sIdx === 0 (첫 번째 '차시별 진도' 섹션)일 때만 시간표 자동 연동 실행
+            // '이벤트' 등 추가된 섹션은 시간표에 영향을 주지 않음
+            if (sIdx === 0 && row.progress[className].done && state.selectedSlot.row !== null) {
+                const weekKey = getWeekKey(state.currentDate);
+                if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
+                
+                const prevVal = state.weeklyData[weekKey].timetable[state.selectedSlot.row][state.selectedSlot.col];
+                const addVal = row.title || '수업';
+                
+                // 기존 내용이 이미 해당 차시를 포함하고 있지 않을 때만 추가
+                if (!prevVal || !prevVal.includes(addVal)) {
+                    state.weeklyData[weekKey].timetable[state.selectedSlot.row][state.selectedSlot.col] = 
+                        prevVal ? `${prevVal}\n${addVal}` : addVal;
+                    
+                    const indicator = document.getElementById('save-indicator');
+                    indicator.innerText = "시간표 자동 기록됨";
+                    indicator.style.opacity = '1';
+                    setTimeout(() => { indicator.style.opacity = '0'; indicator.innerText = "저장됨"; }, 2000);
+                }
+            }
+            saveToLocal(); renderAll();
+        }
+
         function toggleSettings() {
-            const sidebar = document.getElementById('settings-sidebar');
-            const overlay = document.getElementById('settings-overlay');
-            if (sidebar.classList.contains('translate-x-full')) {
-                sidebar.classList.remove('translate-x-full');
-                overlay.classList.remove('hidden');
+            const sb = document.getElementById('settings-sidebar');
+            const ov = document.getElementById('settings-overlay');
+            const open = sb.classList.contains('translate-x-full');
+            if(open) { 
+                sb.classList.remove('translate-x-full'); ov.classList.remove('hidden'); 
                 document.getElementById('class-list-input').value = state.classes.join(', ');
                 renderMasterTimetable();
-            } else {
-                sidebar.classList.add('translate-x-full');
-                overlay.classList.add('hidden');
-            }
+            } else { sb.classList.add('translate-x-full'); ov.classList.add('hidden'); }
             lucide.createIcons();
         }
 
         function renderMasterTimetable() {
             const grid = document.getElementById('master-timetable-grid');
-            let html = `<div class="bg-blue-50 p-1.5 text-[9px] font-bold text-center border-b border-r text-blue-400">교시</div>`;
-            DAYS.forEach(d => html += `<div class="bg-blue-50 p-1.5 text-[9px] font-bold text-center border-b border-r text-blue-500">${d}</div>`);
+            let html = `<div class="bg-blue-50 p-2 border-b border-r"></div>`;
+            DAYS.forEach(d => html += `<div class="bg-blue-50 p-2 text-center border-b border-r text-blue-500 font-bold">${d}</div>`);
             for (let i = 0; i < 7; i++) {
-                html += `<div class="bg-slate-50 p-1.5 text-[9px] font-bold text-center border-b border-r text-slate-400">${i+1}</div>`;
+                html += `<div class="bg-slate-50 p-2 text-center border-b border-r text-slate-400 font-bold">${i+1}</div>`;
                 for (let j = 0; j < 5; j++) {
-                    html += `<div class="border-b border-r p-1 h-10"><textarea id="master-t-${i}-${j}" class="w-full h-full text-[9px] font-bold text-center resize-none outline-none focus:bg-blue-50 leading-tight">${state.masterTimetable[i][j] || ''}</textarea></div>`;
+                    html += `<div class="border-b border-r p-1 h-12"><textarea id="m-t-${i}-${j}" class="w-full h-full text-[10px] text-center resize-none outline-none">${state.masterTimetable[i][j] || ''}</textarea></div>`;
                 }
             }
             grid.innerHTML = html;
@@ -340,43 +323,20 @@
 
         function saveGlobalSettings() {
             state.classes = document.getElementById('class-list-input').value.split(',').map(s => s.trim()).filter(s => s !== '');
-            for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) state.masterTimetable[i][j] = document.getElementById(`master-t-${i}-${j}`).value;
-            saveToLocal();
-            renderAll();
-            toggleSettings();
-        }
-
-        function addNewSection() {
-            state.sections.push({ title: '이벤트', theme: 'red', showHiddenMode: false, rows: [{ title: '', isHidden: false, progress: {} }] });
-            saveToLocal();
-            renderSections();
-        }
-
-        function removeSection(sIdx) {
-            if(sIdx === 0) return; // 기본 테이블 삭제 방지
-            if(confirm("이 테이블 전체를 삭제할까요?")) {
-                state.sections.splice(sIdx, 1);
-                saveToLocal();
-                renderSections();
-            }
+            for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) state.masterTimetable[i][j] = document.getElementById(`m-t-${i}-${j}`).value;
+            saveToLocal(); renderAll(); toggleSettings();
         }
 
         function addRow(sIdx) { state.sections[sIdx].rows.push({ title: '', isHidden: false, progress: {} }); saveToLocal(); renderSections(); }
-        function removeRow(sIdx, rIdx) { if(confirm("이 행을 삭제할까요?")) { state.sections[sIdx].rows.splice(rIdx, 1); saveToLocal(); renderSections(); } }
+        function removeRow(sIdx, rIdx) { if(confirm("삭제할까요?")) { state.sections[sIdx].rows.splice(rIdx, 1); saveToLocal(); renderSections(); } }
+        function addNewSection() { state.sections.push({ id: Date.now(), title: '이벤트', showHiddenMode: false, rows: [{ title: '', isHidden: false, progress: {} }], theme: 'red' }); saveToLocal(); renderSections(); }
+        function removeSection(sIdx) { if(sIdx > 0 && confirm("테이블을 삭제할까요?")) { state.sections.splice(sIdx, 1); saveToLocal(); renderSections(); } }
         function toggleRowHidden(sIdx, rIdx) { state.sections[sIdx].rows[rIdx].isHidden = !state.sections[sIdx].rows[rIdx].isHidden; saveToLocal(); renderSections(); }
         function toggleShowHiddenMode(sIdx) { state.sections[sIdx].showHiddenMode = !state.sections[sIdx].showHiddenMode; renderSections(); }
-        
-        function toggleProgress(sIdx, rIdx, className) {
-            const row = state.sections[sIdx].rows[rIdx];
-            if (!row.progress[className]) row.progress[className] = { done: false, memo: '' };
-            row.progress[className].done = !row.progress[className].done;
-            saveToLocal(); renderSections();
-        }
-        function updateMemo(sIdx, rIdx, className, val) {
-            const row = state.sections[sIdx].rows[rIdx];
-            if (!row.progress[className]) row.progress[className] = { done: false, memo: '' };
-            row.progress[className].memo = val;
-            saveToLocal();
+        function updateMemo(sIdx, rIdx, cls, val) { 
+            if(!state.sections[sIdx].rows[rIdx].progress[cls]) state.sections[sIdx].rows[rIdx].progress[cls] = {done:false, memo:''};
+            state.sections[sIdx].rows[rIdx].progress[cls].memo = val; 
+            saveToLocal(); 
         }
 
         window.onload = init;
