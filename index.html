@@ -240,7 +240,7 @@
                     const isModified = !!modifiedMap[`${i}-${j}`];
                     const isNoClass = state.masterNoClass[i][j];
                     const cellColor = isNoClass ? '' : (isModified ? "is-modified-cell" : (hasContent ? "has-master-data" : ""));
-                    const slotBg = isNoClass ? 'bg-slate-100' : '';
+                    const slotBg = isNoClass ? 'bg-slate-300' : '';
 
                     html += `
                         <div class="h-14 border-r border-b relative timetable-slot ${lunchLine} ${slotBg}" onclick="selectSlot(${i}, ${j})">
@@ -318,7 +318,7 @@
                         <table class="compact-table w-full border-collapse">
                             <thead>
                                 <tr class="bg-slate-50/50 border-b border-slate-100">
-                                    <th class="w-[45%] text-left px-4 py-3 text-[11px] font-bold text-slate-400 uppercase">차시</th>
+                                    <th class="w-[28%] text-left px-4 py-3 text-[11px] font-bold text-slate-400 uppercase">차시</th>
                                     ${state.classes.map(c => `<th class="text-center px-1 py-3 text-sm font-extrabold text-slate-700 border-l border-slate-100/50">${c}</th>`).join('')}
                                 </tr>
                             </thead>
