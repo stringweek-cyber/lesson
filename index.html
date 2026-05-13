@@ -346,7 +346,7 @@
                 <td class="px-4 py-2">
                     <div class="flex flex-col gap-1">
                         <textarea oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" 
-                                  class="w-full bg-transparent outline-none font-semibold text-slate-700 text-xs resize-none overflow-hidden" 
+                                  class="w-full bg-transparent outline-none font-bold text-slate-700 text-sm resize-none overflow-hidden" 
                                   placeholder="차시명 입력...">${row.title}</textarea>
                         <button onclick="toggleRowHidden(${sIdx}, ${rIdx})" class="w-fit p-1 text-slate-200 hover:text-blue-500 transition-colors">
                             ${row.isHidden ? svgEye : svgEyeOff}
@@ -360,7 +360,7 @@
                             <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${cls}')" class="w-full h-7 rounded-lg flex items-center justify-center transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-300 hover:border-blue-500'}">
                                 ${svgCheck}
                             </button>
-                            <textarea onchange="updateMemo(${sIdx}, ${rIdx}, '${cls}', this.value)" class="w-full h-10 text-[10px] bg-slate-50 rounded-lg p-1.5 outline-none resize-none" placeholder="메모...">${p.memo || ''}</textarea>
+                            <textarea onchange="updateMemo(${sIdx}, ${rIdx}, '${cls}', this.value)" class="w-full h-10 text-[10px] font-bold bg-slate-50 rounded-lg p-1.5 outline-none resize-none" placeholder="메모...">${p.memo || ''}</textarea>
                         </div>
                     </td>`;
                 }).join('')}
