@@ -381,14 +381,14 @@
         function renderMasterTimetable() {
             const grid = document.getElementById('master-timetable-grid');
             let html = `<div class="bg-blue-50 p-1 border-b border-r"></div>`;
-            DAYS.forEach(d => html += `<div class="bg-blue-50 p-1 text-center border-b border-r text-blue-500 font-bold">${d}</div>`);
+            DAYS.forEach(d => html += `<div class="bg-blue-50 p-1 text-center border-b border-r text-blue-600 font-bold text-sm">${d}</div>`);
             for (let i = 0; i < 7; i++) {
                 const isAfternoon = i >= 4;
                 const rowBg = isAfternoon ? 'bg-amber-50' : 'bg-slate-50';
                 const cellBg = isAfternoon ? 'bg-amber-50/60' : '';
-                html += `<div class="${rowBg} p-1 text-center border-b border-r text-slate-400 font-bold">${i+1}</div>`;
+                html += `<div class="${rowBg} p-1 text-center border-b border-r text-slate-500 font-bold text-sm">${i+1}</div>`;
                 for (let j = 0; j < 5; j++) {
-                    html += `<div class="border-b border-r p-0.5 h-10 ${cellBg}"><textarea id="m-t-${i}-${j}" class="w-full h-full text-[10px] text-center resize-none outline-none bg-transparent">${state.masterTimetable[i][j] || ''}</textarea></div>`;
+                    html += `<div class="border-b border-r p-0.5 h-11 ${cellBg}"><textarea id="m-t-${i}-${j}" class="w-full h-full text-xs text-center resize-none outline-none bg-transparent font-medium">${state.masterTimetable[i][j] || ''}</textarea></div>`;
                 }
             }
             grid.innerHTML = html;
@@ -397,7 +397,12 @@
         function saveGlobalSettings() {
             state.classes = document.getElementById('class-list-input').value.split(',').map(s => s.trim()).filter(s => s !== '');
             for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) state.masterTimetable[i][j] = document.getElementById(`m-t-${i}-${j}`).value;
-            saveToLocal(); renderAll(); toggleSettings();
+            // weeklyData 초기화: 마스터 변경 후 기존 주간 오버라이드 제거하여 메인에 즉시 반영
+            state.weeklyData = {};
+            saveToLocal();
+            document.getElementById('settings-sidebar').classList.add('translate-x-full');
+            document.getElementById('settings-overlay').classList.add('hidden');
+            renderAll();
         }
 
         function addRow(sIdx) { state.sections[sIdx].rows.push({ title: '', isHidden: false, progress: {} }); saveToLocal(); renderSections(); }
