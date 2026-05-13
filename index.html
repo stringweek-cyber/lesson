@@ -177,13 +177,12 @@
             const displayTable = isWeeklyModified ? state.weeklyData[weekKey].timetable : state.masterTimetable;
             const mon = getMonday(state.currentDate);
 
-            // 교시 컬럼 너비를 최소화하여 요일 컬럼 공간 확보
             let html = `<div class="h-10 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r period-label">교시</div>`;
             DAYS.forEach((day, i) => {
                 const d = new Date(mon); d.setDate(mon.getDate() + i);
                 html += `<div class="h-10 flex flex-col items-center justify-center border-b border-r bg-slate-50">
                     <span class="text-[11px] font-extrabold text-blue-500 leading-none date-label">${d.getMonth()+1}.${d.getDate()}</span>
-                    <span class="text-[11px] font-bold text-slate-600 day-label">${day}</span>
+                    <span class="text-[10px] font-bold text-slate-600 day-label">${day}</span>
                 </div>`;
             });
 
@@ -237,22 +236,21 @@
 
                 return `
                 <div class="bg-white rounded-2xl border border-${themeColor}-100 overflow-hidden shadow-sm ${section.showHiddenMode ? 'show-hidden-mode' : ''}">
-                    <div class="px-5 py-4 border-b flex justify-between items-center ${headerBg}">
-                        <input type="text" value="${section.title}" onchange="state.sections[${sIdx}].title=this.value; saveToLocal();" class="font-black text-lg bg-transparent outline-none">
+                    <div class="px-4 py-2 border-b flex justify-between items-center ${headerBg}">
+                        <input type="text" value="${section.title}" onchange="state.sections[${sIdx}].title=this.value; saveToLocal();" class="font-bold text-xs bg-transparent outline-none">
                         <div class="flex items-center gap-2">
-                            ${hiddenCount > 0 ? `<button onclick="toggleShowHiddenMode(${sIdx})" class="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-white border border-slate-200">숨김(${hiddenCount})</button>` : ''}
-                            ${!isBase ? `<button onclick="removeSection(${sIdx})" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
+                            ${hiddenCount > 0 ? `<button onclick="toggleShowHiddenMode(${sIdx})" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white border border-slate-200">숨김(${hiddenCount})</button>` : ''}
+                            ${!isBase ? `<button onclick="removeSection(${sIdx})" class="p-1.5 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                         </div>
                     </div>
                     <div class="overflow-x-auto scrollbar-hide"><table class="compact-table w-full text-sm">
-                        <thead class="bg-slate-50/50 text-[11px] font-bold text-slate-400"><tr>
-                            <th class="text-left w-48 px-4">차시</th>
-                            ${state.classes.map(c => `<th class="text-center">${c}</th>`).join('')}
-                            <th class="w-10"></th>
+                        <thead class="bg-slate-50/50 border-b"><tr>
+                            <th class="text-left w-48 px-4 py-3 text-[11px] font-bold text-slate-400">차시</th>
+                            ${state.classes.map(c => `<th class="text-center px-2 py-3 text-sm font-extrabold text-slate-700">${c}</th>`).join('')}
                         </tr></thead>
                         <tbody>${section.rows.map((row, rIdx) => renderRow(sIdx, rIdx, row)).join('')}</tbody>
                     </table></div>
-                    <div class="p-4 bg-slate-50/30 border-t"><button onclick="addRow(${sIdx})" class="text-xs font-bold text-${themeColor}-600 flex items-center gap-1"><i data-lucide="plus-circle" class="w-4 h-4"></i> 행 추가</button></div>
+                    <div class="p-3 bg-slate-50/30 border-t"><button onclick="addRow(${sIdx})" class="text-[10px] font-bold text-${themeColor}-600 flex items-center gap-1"><i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> 행 추가</button></div>
                 </div>`;
             }).join('');
             lucide.createIcons();
@@ -260,14 +258,20 @@
 
         function renderRow(sIdx, rIdx, row) {
             return `<tr class="${row.isHidden ? 'row-hidden' : ''} border-b border-slate-50">
-                <td class="flex items-center gap-2">
-                    <button onclick="toggleRowHidden(${sIdx}, ${rIdx})" class="p-1.5 text-slate-200 hover:text-blue-500"><i data-lucide="${row.isHidden ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
-                    <input type="text" value="${row.title}" onchange="state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" class="w-full bg-transparent outline-none font-semibold text-slate-700">
+                <td class="px-4 py-2">
+                    <div class="flex flex-col gap-1">
+                        <textarea oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" 
+                                  class="w-full bg-transparent outline-none font-semibold text-slate-700 text-xs resize-none overflow-hidden" 
+                                  placeholder="차시명 입력...">${row.title}</textarea>
+                        <button onclick="toggleRowHidden(${sIdx}, ${rIdx})" class="w-fit p-1 text-slate-200 hover:text-blue-500 transition-colors">
+                            <i data-lucide="${row.isHidden ? 'eye' : 'eye-off'}" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
                 </td>
                 ${state.classes.map(cls => {
                     const p = row.progress[cls] || {done:false, memo:''};
                     return `<td class="text-center">
-                        <div class="flex flex-col items-center gap-2">
+                        <div class="flex flex-col items-center gap-2 py-1">
                             <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${cls}')" class="w-16 h-7 rounded-lg flex items-center justify-center transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-transparent hover:border-blue-500'}">
                                 <i data-lucide="check" class="w-4 h-4"></i>
                             </button>
@@ -275,7 +279,6 @@
                         </div>
                     </td>`;
                 }).join('')}
-                <td><button onclick="removeRow(${sIdx}, ${rIdx})" class="text-slate-200 hover:text-red-500 p-2"><i data-lucide="minus-circle" class="w-4 h-4"></i></button></td>
             </tr>`;
         }
 
