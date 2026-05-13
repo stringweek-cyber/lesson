@@ -32,9 +32,14 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
         
-        .has-master-data, .is-modified {
+        .has-master-data {
             background-color: #dbeafe !important;
             color: #1e40af !important;
+        }
+
+        .is-modified-cell {
+            background-color: #fee2e2 !important;
+            color: #991b1b !important;
         }
 
         .compact-table td, .compact-table th {
@@ -48,10 +53,13 @@
             background-color: #f1f5f9;
         }
 
-        .lunch-divider { border-top: 3px solid #cbd5e1 !important; }
+        .timetable-inner-box textarea {
+            padding-top: 12px;
+            line-height: 1.2;
+        }
         
         @media (max-width: 640px) {
-            .timetable-slot textarea { font-size: 9px; line-height: 1.1; padding-top: 4px; }
+            .timetable-inner-box textarea { padding-top: 10px; }
             .day-label { font-size: 13px !important; }
             .date-label { font-size: 11px !important; }
             .period-label { font-size: 11px !important; width: 35px !important; }
@@ -126,10 +134,14 @@
                 <input type="text" id="class-list-input" class="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl outline-none font-bold">
             </section>
             <section>
-                <label class="block text-sm font-bold text-slate-700 mb-3">마스터 시간표 (기본값)</label>
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-sm font-bold text-slate-700">마스터 시간표 (기본값)</label>
+                    <button id="noclass-mode-btn" onclick="toggleNoClassMode()" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-500 transition-all">없는 교시 설정</button>
+                </div>
                 <div class="border border-blue-100 rounded-xl overflow-hidden">
                     <div id="master-timetable-grid" class="bg-white text-[10px]" style="display:grid; grid-template-columns: 28px repeat(5, 1fr);"></div>
                 </div>
+                <p id="noclass-hint" class="hidden mt-2 text-[11px] text-slate-400 text-center">셀을 눌러 수업 없는 교시를 표시하세요</p>
             </section>
             <button onclick="saveGlobalSettings()" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold">저장 및 즉시 적용</button>
         </div>
@@ -140,6 +152,7 @@
             classes: ['1-1', '1-2', '1-3'],
             currentDate: new Date(),
             masterTimetable: Array(7).fill().map(() => Array(5).fill('')),
+            masterNoClass: Array(7).fill().map(() => Array(5).fill(false)),
             weeklyData: {}, 
             selectedSlot: { row: null, col: null },
             editMode: false,
@@ -156,6 +169,7 @@
                 const parsed = JSON.parse(saved);
                 state.classes = parsed.classes || state.classes;
                 state.masterTimetable = parsed.masterTimetable || state.masterTimetable;
+                state.masterNoClass = parsed.masterNoClass || Array(7).fill().map(() => Array(5).fill(false));
                 state.weeklyData = parsed.weeklyData || state.weeklyData;
                 state.sections = (parsed.sections && parsed.sections.length > 0) ? parsed.sections : state.sections;
             }
@@ -193,7 +207,7 @@
             const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
             const f = (d) => `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
             const fShort = (d) => `${d.getMonth() + 1}.${d.getDate()}`;
-            document.getElementById('current-week-display').innerText = `${f(mon)} - ${fShort(fri)}`;
+            document.getElementById('current-week-display').innerText = `${fShort(mon)}(월) - ${fShort(fri)}(금)`;
         }
 
         function renderTimetable() {
@@ -222,14 +236,19 @@
                     const content = displayTable[i][j];
                     const hasContent = content && content.trim() !== '';
                     const isSelected = state.selectedSlot.row === i && state.selectedSlot.col === j;
-                    const cellColor = hasContent ? "has-master-data" : "";
+                    const modifiedMap = state.weeklyData[weekKey]?.modified || {};
+                    const isModified = !!modifiedMap[`${i}-${j}`];
+                    const isNoClass = state.masterNoClass[i][j];
+                    const cellColor = isNoClass ? '' : (isModified ? "is-modified-cell" : (hasContent ? "has-master-data" : ""));
+                    const slotBg = isNoClass ? 'bg-slate-100' : '';
 
                     html += `
-                        <div class="h-14 border-r border-b relative timetable-slot ${lunchLine}" onclick="selectSlot(${i}, ${j})">
+                        <div class="h-14 border-r border-b relative timetable-slot ${lunchLine} ${slotBg}" onclick="selectSlot(${i}, ${j})">
                             <div class="timetable-inner-box ${cellColor} ${isSelected ? 'is-selected' : ''}">
-                                ${state.editMode ? 
-                                    `<textarea oninput="updateSlot(${i}, ${j}, this.value)" class="w-full h-full bg-transparent text-[11px] font-bold text-center resize-none outline-none pt-2">${content || ''}</textarea>` :
-                                    `<span class="text-[10px] font-bold text-center px-0.5 whitespace-pre-wrap break-all leading-tight">${content || ''}</span>`
+                                ${isNoClass ? `<span class="text-[10px] text-slate-300 font-medium">-</span>` :
+                                  state.editMode ? 
+                                    `<textarea oninput="updateSlot(${i}, ${j}, this.value)" class="w-full h-full bg-transparent text-sm font-bold text-center resize-none outline-none leading-tight px-0.5 flex items-center">${content || ''}</textarea>` :
+                                    `<span class="text-sm font-bold text-center px-0.5 whitespace-pre-wrap break-all leading-tight">${content || ''}</span>`
                                 }
                             </div>
                         </div>`;
@@ -244,6 +263,9 @@
             const weekKey = getWeekKey(state.currentDate);
             if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
             state.weeklyData[weekKey].timetable[r][c] = val;
+            // 수정된 셀 추적
+            if (!state.weeklyData[weekKey].modified) state.weeklyData[weekKey].modified = {};
+            state.weeklyData[weekKey].modified[`${r}-${c}`] = true;
             saveToLocal();
         }
 
@@ -273,7 +295,7 @@
                 const hiddenCount = section.rows.filter(r => r.isHidden).length;
                 const isShowMode = section.showHiddenMode;
                 const themeColor = section.theme === 'red' ? 'rose' : 'blue';
-                const headerBg = isBase ? 'bg-blue-50/80' : 'bg-rose-50/80';
+                const headerBg = isBase ? 'bg-blue-100' : 'bg-rose-100';
 
                 return `
                 <div class="bg-white rounded-2xl border border-${themeColor}-100 overflow-hidden shadow-sm ${isShowMode ? 'show-hidden-mode' : ''}">
@@ -316,23 +338,27 @@
         }
 
         function renderTableRow(sIdx, rIdx, row) {
-            return `<tr class="${row.isHidden ? 'row-hidden' : ''} border-b border-slate-50">
+            const svgCheck = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+            const svgEye = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+            const svgEyeOff = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+            const rowBg = '';
+            return `<tr class="${row.isHidden ? 'row-hidden' : ''} border-b-2 border-slate-200 ${rowBg}">
                 <td class="px-4 py-2">
                     <div class="flex flex-col gap-1">
                         <textarea oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" 
                                   class="w-full bg-transparent outline-none font-semibold text-slate-700 text-xs resize-none overflow-hidden" 
                                   placeholder="차시명 입력...">${row.title}</textarea>
                         <button onclick="toggleRowHidden(${sIdx}, ${rIdx})" class="w-fit p-1 text-slate-200 hover:text-blue-500 transition-colors">
-                            <i data-lucide="${row.isHidden ? 'eye' : 'eye-off'}" class="w-3.5 h-3.5"></i>
+                            ${row.isHidden ? svgEye : svgEyeOff}
                         </button>
                     </div>
                 </td>
                 ${state.classes.map(cls => {
                     const p = row.progress[cls] || {done:false, memo:''};
-                    return `<td class="text-center">
-                        <div class="flex flex-col items-center gap-2 py-1">
-                            <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${cls}')" class="w-16 h-7 rounded-lg flex items-center justify-center transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-transparent hover:border-blue-500'}">
-                                <i data-lucide="check" class="w-4 h-4"></i>
+                    return `<td class="text-center p-1">
+                        <div class="flex flex-col items-center gap-1.5 p-1.5 rounded-xl border-2 ${p.done ? 'border-emerald-400' : 'border-slate-100'}">
+                            <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${cls}')" class="w-full h-7 rounded-lg flex items-center justify-center transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-300 hover:border-blue-500'}">
+                                ${svgCheck}
                             </button>
                             <textarea onchange="updateMemo(${sIdx}, ${rIdx}, '${cls}', this.value)" class="w-full h-10 text-[10px] bg-slate-50 rounded-lg p-1.5 outline-none resize-none" placeholder="메모...">${p.memo || ''}</textarea>
                         </div>
@@ -378,6 +404,41 @@
             safeIcons();
         }
 
+        let noClassMode = false;
+
+        function toggleNoClassMode() {
+            noClassMode = !noClassMode;
+            const btn = document.getElementById('noclass-mode-btn');
+            const hint = document.getElementById('noclass-hint');
+            btn.classList.toggle('bg-slate-700', noClassMode);
+            btn.classList.toggle('text-white', noClassMode);
+            btn.classList.toggle('border-slate-700', noClassMode);
+            btn.classList.toggle('bg-white', !noClassMode);
+            btn.classList.toggle('text-slate-500', !noClassMode);
+            btn.classList.toggle('border-slate-200', !noClassMode);
+            btn.innerText = noClassMode ? '설정 중...' : '없는 교시 설정';
+            hint.classList.toggle('hidden', !noClassMode);
+        }
+
+        function clickMasterCell(i, j) {
+            if (!noClassMode) return;
+            state.masterNoClass[i][j] = !state.masterNoClass[i][j];
+            renderMasterTimetable();
+            // renderMasterTimetable 후 버튼/힌트 상태 복원
+            const btn = document.getElementById('noclass-mode-btn');
+            const hint = document.getElementById('noclass-hint');
+            if (btn) {
+                btn.classList.toggle('bg-slate-700', noClassMode);
+                btn.classList.toggle('text-white', noClassMode);
+                btn.classList.toggle('border-slate-700', noClassMode);
+                btn.classList.toggle('bg-white', !noClassMode);
+                btn.classList.toggle('text-slate-500', !noClassMode);
+                btn.classList.toggle('border-slate-200', !noClassMode);
+                btn.innerText = noClassMode ? '설정 중...' : '없는 교시 설정';
+            }
+            if (hint) hint.classList.toggle('hidden', !noClassMode);
+        }
+
         function renderMasterTimetable() {
             const grid = document.getElementById('master-timetable-grid');
             let html = `<div class="bg-blue-50 p-1 border-b border-r"></div>`;
@@ -388,7 +449,15 @@
                 const cellBg = isAfternoon ? 'bg-amber-50/60' : '';
                 html += `<div class="${rowBg} p-1 text-center border-b border-r text-slate-500 font-bold text-sm">${i+1}</div>`;
                 for (let j = 0; j < 5; j++) {
-                    html += `<div class="border-b border-r p-0.5 h-11 ${cellBg}"><textarea id="m-t-${i}-${j}" class="w-full h-full text-xs text-center resize-none outline-none bg-transparent font-medium">${state.masterTimetable[i][j] || ''}</textarea></div>`;
+                    const isNoClass = state.masterNoClass[i][j];
+                    const noBg = isNoClass ? 'bg-slate-200' : cellBg;
+                    const ptrStyle = noClassMode ? 'style="pointer-events:none"' : '';
+                    html += `<div class="border-b border-r p-0.5 h-11 ${noBg} cursor-pointer" onclick="clickMasterCell(${i},${j})">
+                        ${isNoClass
+                            ? `<div class="w-full h-full flex items-center justify-center text-slate-400 font-bold text-sm select-none">✕</div>`
+                            : `<textarea id="m-t-${i}-${j}" class="w-full h-full text-xs text-center resize-none outline-none bg-transparent font-medium" ${ptrStyle}>${state.masterTimetable[i][j] || ''}</textarea>`
+                        }
+                    </div>`;
                 }
             }
             grid.innerHTML = html;
@@ -396,8 +465,19 @@
 
         function saveGlobalSettings() {
             state.classes = document.getElementById('class-list-input').value.split(',').map(s => s.trim()).filter(s => s !== '');
-            for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) state.masterTimetable[i][j] = document.getElementById(`m-t-${i}-${j}`).value;
-            // weeklyData 초기화: 마스터 변경 후 기존 주간 오버라이드 제거하여 메인에 즉시 반영
+            for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) {
+                const ta = document.getElementById(`m-t-${i}-${j}`);
+                if (ta) state.masterTimetable[i][j] = ta.value;
+            }
+            noClassMode = false;
+            const btn = document.getElementById('noclass-mode-btn');
+            const hint = document.getElementById('noclass-hint');
+            if (btn) {
+                btn.classList.remove('bg-slate-700','text-white','border-slate-700');
+                btn.classList.add('bg-white','text-slate-500','border-slate-200');
+                btn.innerText = '없는 교시 설정';
+            }
+            if (hint) hint.classList.add('hidden');
             state.weeklyData = {};
             saveToLocal();
             document.getElementById('settings-sidebar').classList.add('translate-x-full');
