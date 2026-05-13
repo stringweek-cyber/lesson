@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>진도표 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
@@ -16,7 +16,6 @@
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         
-        /* 시간표 박스 디자인: image_3a4599.png 대응 */
         .timetable-inner-box {
             margin: 2px;
             height: calc(100% - 4px);
@@ -28,19 +27,16 @@
             border: 2px solid transparent;
         }
 
-        /* 선택된 칸 테두리: image_39655c.png 피드백 반영 */
         .is-selected {
             border-color: #3b82f6 !important;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
         
-        /* 색상은 항상 푸른색 계열 유지 */
         .has-master-data, .is-modified {
             background-color: #dbeafe !important;
             color: #1e40af !important;
         }
 
-        /* 진도표 콤팩트 스타일링 */
         .compact-table td, .compact-table th {
             padding: 6px !important;
         }
@@ -52,11 +48,9 @@
             background-color: #f1f5f9;
         }
 
-        /* 4교시-5교시 구분선 */
         .lunch-divider { border-top: 3px solid #cbd5e1 !important; }
         
         @media (max-width: 640px) {
-            /* 모바일에서 월-금 한 화면에 들어오게 폰트 및 패딩 축소 */
             .timetable-slot textarea { font-size: 9px; line-height: 1.1; padding-top: 4px; }
             .day-label { font-size: 13px !important; }
             .date-label { font-size: 11px !important; }
@@ -67,28 +61,35 @@
 <body class="min-h-screen pb-20">
 
     <header class="bg-white border-b border-blue-100 shadow-sm sticky top-0 z-30">
-        <div class="max-w-[1400px] mx-auto px-4 py-3 md:px-6 header-content">
-            <div class="flex justify-between items-center gap-4">
-                <div class="flex items-center gap-4">
-                    <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <i data-lucide="check-square" class="text-blue-500 w-6 h-6"></i> 진도표
-                    </h1>
-                    <div class="flex items-center bg-blue-50 rounded-xl p-1 border border-blue-100">
-                        <button onclick="changeWeek(-7)" class="p-1.5 hover:bg-white rounded-lg transition-all active:scale-90">
-                            <i data-lucide="chevron-left" class="w-4 h-4 text-blue-600"></i>
-                        </button>
-                        <span id="current-week-display" class="px-4 text-sm font-bold text-slate-700 min-w-[200px] text-center"></span>
-                        <button onclick="changeWeek(7)" class="p-1.5 hover:bg-white rounded-lg transition-all active:scale-90">
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-blue-600"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button id="edit-mode-btn" onclick="toggleEditMode()" class="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">시간표 수정</button>
-                    <button onclick="toggleSettings()" class="p-2 hover:bg-blue-50 rounded-xl transition-all">
-                        <i data-lucide="menu" class="w-7 h-7 text-slate-600"></i>
+        <div class="max-w-[1400px] mx-auto px-4 py-3 md:px-6">
+            <div class="flex items-center justify-between gap-2">
+
+                <!-- 왼쪽: 타이틀 -->
+                <h1 class="text-lg font-bold text-slate-900 flex items-center gap-1.5 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>진도표</span>
+                </h1>
+
+                <!-- 가운데: 날짜 네비게이터 + 수정 버튼 -->
+                <div class="flex items-center bg-blue-50 rounded-xl p-1 border border-blue-100 flex-1 min-w-0">
+                    <button onclick="changeWeek(-7)" class="p-1.5 hover:bg-white rounded-lg transition-all active:scale-90 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span id="current-week-display" class="flex-1 text-xs font-bold text-slate-700 text-center truncate px-1"></span>
+                    <button onclick="changeWeek(7)" class="p-1.5 hover:bg-white rounded-lg transition-all active:scale-90 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <!-- 수정 버튼: 날짜 바로 옆 -->
+                    <button id="edit-mode-btn" onclick="toggleEditMode()"
+                        class="ml-1 px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-white border border-blue-200 text-blue-600 hover:bg-blue-100 transition-all shrink-0 whitespace-nowrap">
+                        수정
                     </button>
                 </div>
+
+                <!-- 오른쪽: 설정 메뉴 -->
+                <button onclick="toggleSettings()" class="p-2 hover:bg-blue-50 rounded-xl transition-all shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
             </div>
         </div>
     </header>
@@ -96,9 +97,7 @@
     <main class="max-w-[1400px] mx-auto p-4 md:p-6 space-y-6">
         <section class="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm">
             <div class="w-full">
-                <!-- image_387f63.png의 흰 여백 해결을 위해 grid-template-columns를 JS에서 직접 제어함 -->
                 <div id="timetable-grid" class="grid gap-0 w-full" style="display: grid; grid-template-columns: 35px repeat(5, 1fr);">
-                    <!-- JS에서 렌더링 -->
                 </div>
             </div>
             <div class="px-4 py-1.5 bg-slate-50 border-t flex justify-end">
@@ -178,11 +177,15 @@
 
         function changeWeek(days) { state.currentDate.setDate(state.currentDate.getDate() + days); state.selectedSlot = {row:null, col:null}; renderAll(); }
 
+        function safeIcons() {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
         function renderAll() {
             updateDateDisplay();
             renderTimetable();
             renderSections();
-            lucide.createIcons();
+            safeIcons();
         }
 
         function updateDateDisplay() {
@@ -190,7 +193,7 @@
             const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
             const f = (d) => `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
             const fShort = (d) => `${d.getMonth() + 1}.${d.getDate()}`;
-            document.getElementById('current-week-display').innerText = `${f(mon)}(월) - ${fShort(fri)}(금)`;
+            document.getElementById('current-week-display').innerText = `${f(mon)} - ${fShort(fri)}`;
         }
 
         function renderTimetable() {
@@ -200,7 +203,6 @@
             const displayTable = isWeeklyModified ? state.weeklyData[weekKey].timetable : state.masterTimetable;
             const mon = getMonday(state.currentDate);
 
-            // image_387f63.png 해결: div 구조를 확실히 하고 6열 그리드를 유지함
             let html = `<div class="h-12 flex items-center justify-center text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-r period-label">교시</div>`;
             
             DAYS.forEach((day, i) => {
@@ -247,7 +249,14 @@
 
         function toggleEditMode() {
             state.editMode = !state.editMode;
-            document.getElementById('edit-mode-btn').innerText = state.editMode ? "수정 완료" : "시간표 수정";
+            const btn = document.getElementById('edit-mode-btn');
+            btn.innerText = state.editMode ? "완료" : "수정";
+            btn.classList.toggle('bg-blue-600', state.editMode);
+            btn.classList.toggle('text-white', state.editMode);
+            btn.classList.toggle('border-blue-600', state.editMode);
+            btn.classList.toggle('bg-white', !state.editMode);
+            btn.classList.toggle('text-blue-600', !state.editMode);
+            btn.classList.toggle('border-blue-200', !state.editMode);
             state.selectedSlot = {row:null, col:null};
             renderTimetable();
         }
@@ -303,7 +312,7 @@
                     </div>
                 </div>
             `}).join('');
-            lucide.createIcons();
+            safeIcons();
         }
 
         function renderTableRow(sIdx, rIdx, row) {
@@ -366,7 +375,7 @@
                 document.getElementById('class-list-input').value = state.classes.join(', ');
                 renderMasterTimetable();
             } else { sb.classList.add('translate-x-full'); ov.classList.add('hidden'); }
-            lucide.createIcons();
+            safeIcons();
         }
 
         function renderMasterTimetable() {
@@ -400,7 +409,7 @@
             saveToLocal(); 
         }
 
-        window.onload = init;
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
