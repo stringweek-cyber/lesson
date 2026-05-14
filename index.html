@@ -64,6 +64,42 @@
             .date-label { font-size: 11px !important; }
             .period-label { font-size: 11px !important; width: 35px !important; }
         }
+
+        /* popup */
+        #cell-popup-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(15,23,42,0.45); z-index: 60;
+            align-items: center; justify-content: center;
+        }
+        #cell-popup-overlay.open { display: flex; }
+        #cell-popup {
+            background: #fff; border-radius: 20px;
+            width: min(92vw, 360px);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.18); overflow: hidden;
+        }
+        #cell-popup-header {
+            padding: 14px 18px 10px; border-bottom: 1px solid #e2e8f0;
+            font-size: 13px; font-weight: 800; color: #334155;
+        }
+        #cell-popup-body { padding: 14px 18px; }
+        #cell-popup-textarea {
+            width: 100%; min-height: 90px; border: 1.5px solid #bfdbfe;
+            border-radius: 10px; padding: 10px 12px;
+            font-size: 14px; font-weight: 700; color: #1e293b;
+            resize: vertical; outline: none; font-family: inherit;
+            background: #f0f7ff; box-sizing: border-box;
+        }
+        #cell-popup-textarea:focus { border-color: #3b82f6; background: #fff; }
+        #cell-popup-footer { display: flex; gap: 8px; padding: 0 18px 16px; }
+        .popup-btn {
+            flex: 1; padding: 10px 0; border-radius: 10px;
+            font-size: 13px; font-weight: 800; border: none;
+            cursor: pointer; transition: opacity 0.15s;
+        }
+        .popup-btn:active { opacity: 0.7; }
+        .popup-btn-cancel { background: #f1f5f9; color: #64748b; }
+        .popup-btn-delete { background: #fee2e2; color: #b91c1c; }
+        .popup-btn-save   { background: #2563eb; color: #fff; }
     </style>
 </head>
 <body class="min-h-screen pb-20">
@@ -147,7 +183,80 @@
         </div>
     </div>
 
+    <!-- cell edit popup -->
+    <div id="cell-popup-overlay" onclick="closeCellPopup(event)">
+        <div id="cell-popup">
+            <div id="cell-popup-header">셀 편집</div>
+            <div id="cell-popup-body">
+                <textarea id="cell-popup-textarea" placeholder="내용 입력..."></textarea>
+            </div>
+            <div id="cell-popup-footer">
+                <button class="popup-btn popup-btn-cancel" onclick="closeCellPopup()">취소</button>
+                <button class="popup-btn popup-btn-delete" onclick="deleteSlotContent()">삭제</button>
+                <button class="popup-btn popup-btn-save" onclick="saveSlotContent()">저장</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
+        let popupSlot = { row: null, col: null };
+
+        function handleCellClick(r, c) {
+            if (state.editMode) return;
+            if (state.masterNoClass[r][c]) return;
+            if (state.selectedSlot.row === r && state.selectedSlot.col === c) {
+                openCellPopup(r, c);
+            } else {
+                state.selectedSlot = { row: r, col: c };
+                renderTimetable();
+            }
+        }
+
+        function openCellPopup(r, c) {
+            popupSlot = { row: r, col: c };
+            const weekKey = getWeekKey(state.currentDate);
+            const displayTable = state.weeklyData[weekKey] ? state.weeklyData[weekKey].timetable : state.masterTimetable;
+            document.getElementById('cell-popup-header').textContent = DAYS[c] + '요일 ' + (r + 1) + '교시';
+            document.getElementById('cell-popup-textarea').value = displayTable[r][c] || '';
+            document.getElementById('cell-popup-overlay').classList.add('open');
+            setTimeout(() => document.getElementById('cell-popup-textarea').focus(), 80);
+        }
+
+        function closeCellPopup(e) {
+            if (e && e.target !== document.getElementById('cell-popup-overlay')) return;
+            document.getElementById('cell-popup-overlay').classList.remove('open');
+            popupSlot = { row: null, col: null };
+        }
+
+        function saveSlotContent() {
+            if (popupSlot.row === null) return;
+            const val = document.getElementById('cell-popup-textarea').value;
+            const weekKey = getWeekKey(state.currentDate);
+            if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)), modified: {} };
+            if (!state.weeklyData[weekKey].modified) state.weeklyData[weekKey].modified = {};
+            state.weeklyData[weekKey].timetable[popupSlot.row][popupSlot.col] = val;
+            state.weeklyData[weekKey].modified[popupSlot.row + '-' + popupSlot.col] = true;
+            saveToLocal();
+            document.getElementById('cell-popup-overlay').classList.remove('open');
+            popupSlot = { row: null, col: null };
+            renderTimetable();
+        }
+
+        function deleteSlotContent() {
+            if (popupSlot.row === null) return;
+            const weekKey = getWeekKey(state.currentDate);
+            const masterVal = state.masterTimetable[popupSlot.row][popupSlot.col];
+            if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)), modified: {} };
+            if (!state.weeklyData[weekKey].modified) state.weeklyData[weekKey].modified = {};
+            state.weeklyData[weekKey].timetable[popupSlot.row][popupSlot.col] = masterVal;
+            delete state.weeklyData[weekKey].modified[popupSlot.row + '-' + popupSlot.col];
+            saveToLocal();
+            document.getElementById('cell-popup-overlay').classList.remove('open');
+            popupSlot = { row: null, col: null };
+            renderTimetable();
+        }
+
         let state = {
             classes: ['1-1', '1-2', '1-3'],
             currentDate: new Date(),
@@ -243,7 +352,7 @@
                     const slotBg = isNoClass ? 'bg-slate-300' : '';
 
                     html += `
-                        <div class="h-14 border-r border-b relative timetable-slot ${lunchLine} ${slotBg}" onclick="selectSlot(${i}, ${j})">
+                        <div class="h-14 border-r border-b relative timetable-slot ${lunchLine} ${slotBg}" onclick="handleCellClick(${i}, ${j})">
                             <div class="timetable-inner-box ${cellColor} ${isSelected ? 'is-selected' : ''}">
                                 ${isNoClass ? `<span class="text-[10px] text-slate-300 font-medium">-</span>` :
                                   state.editMode ? 
@@ -372,21 +481,29 @@
             if (!row.progress[className]) row.progress[className] = { done: false, memo: '' };
             row.progress[className].done = !row.progress[className].done;
 
-            if (sIdx === 0 && row.progress[className].done && state.selectedSlot.row !== null) {
+            if (sIdx === 0 && state.selectedSlot.row !== null) {
                 const weekKey = getWeekKey(state.currentDate);
-                if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)) };
-                
-                const prevVal = state.weeklyData[weekKey].timetable[state.selectedSlot.row][state.selectedSlot.col];
+                if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)), modified: {} };
+                if (!state.weeklyData[weekKey].modified) state.weeklyData[weekKey].modified = {};
+                const r = state.selectedSlot.row, c = state.selectedSlot.col;
+                const cellVal = state.weeklyData[weekKey].timetable[r][c];
                 const addVal = row.title || '수업';
-                
-                if (!prevVal || !prevVal.includes(addVal)) {
-                    state.weeklyData[weekKey].timetable[state.selectedSlot.row][state.selectedSlot.col] = 
-                        prevVal ? `${prevVal}\n${addVal}` : addVal;
-                    
-                    const indicator = document.getElementById('save-indicator');
-                    indicator.innerText = "시간표 자동 기록됨";
-                    indicator.style.opacity = '1';
-                    setTimeout(() => { indicator.style.opacity = '0'; indicator.innerText = "저장됨"; }, 2000);
+
+                if (row.progress[className].done) {
+                    // 체크 ON: 차시명 추가 (modified 플래그 건드리지 않음)
+                    if (!cellVal || !cellVal.includes(addVal)) {
+                        state.weeklyData[weekKey].timetable[r][c] = cellVal ? `${cellVal}\n${addVal}` : addVal;
+                        const indicator = document.getElementById('save-indicator');
+                        indicator.innerText = "시간표 자동 기록됨";
+                        indicator.style.opacity = '1';
+                        setTimeout(() => { indicator.style.opacity = '0'; indicator.innerText = "저장됨"; }, 2000);
+                    }
+                } else {
+                    // 체크 OFF: 차시명 제거 (modified 플래그 건드리지 않음)
+                    if (cellVal && cellVal.includes(addVal)) {
+                        const newVal = cellVal.split('\n').filter(line => line.trim() !== addVal.trim()).join('\n');
+                        state.weeklyData[weekKey].timetable[r][c] = newVal;
+                    }
                 }
             }
             saveToLocal(); renderAll();
