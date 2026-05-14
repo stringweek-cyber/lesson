@@ -296,10 +296,6 @@
                 const isShowMode = section.showHiddenMode;
                 const themeColor = section.theme === 'red' ? 'rose' : 'blue';
                 const headerBg = isBase ? 'bg-blue-100' : 'bg-rose-100';
-                const clsCount = state.classes.length;
-                const needsScroll = clsCount > 4;
-                const fixedCols = needsScroll ? 4 : clsCount;
-                const tableWidth = needsScroll ? `${18 + clsCount * 20}%` : '100%';
 
                 return `
                 <div class="bg-white rounded-2xl border border-${themeColor}-100 overflow-hidden shadow-sm ${isShowMode ? 'show-hidden-mode' : ''}">
@@ -319,15 +315,15 @@
                     </div>
 
                     <div class="overflow-x-auto scrollbar-hide">
-                        <table class="compact-table border-collapse" style="width:${tableWidth}; min-width:100%;">
+                        <table class="compact-table w-full border-collapse">
                             <thead>
                                 <tr class="bg-slate-50/50 border-b border-slate-100">
-                                    <th class="text-left px-4 py-3 text-[11px] font-bold text-slate-400 uppercase" style="width:18%; min-width:80px;">차시</th>
-                                    ${state.classes.map((c, ci) => `<th class="text-center px-1 py-3 text-sm font-extrabold text-slate-700 border-l border-slate-100/50" style="min-width:${needsScroll ? '80px' : 'auto'}; width:${needsScroll ? '80px' : 'auto'};">${c}</th>`).join('')}
+                                    <th class="w-[18%] text-left px-4 py-3 text-[11px] font-bold text-slate-400 uppercase">차시</th>
+                                    ${state.classes.map(c => `<th class="text-center px-1 py-3 text-sm font-extrabold text-slate-700 border-l border-slate-100/50">${c}</th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody>
-                                ${section.rows.map((row, rIdx) => renderTableRow(sIdx, rIdx, row, needsScroll)).join('')}
+                                ${section.rows.map((row, rIdx) => renderTableRow(sIdx, rIdx, row)).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -341,13 +337,13 @@
             safeIcons();
         }
 
-        function renderTableRow(sIdx, rIdx, row, needsScroll) {
+        function renderTableRow(sIdx, rIdx, row) {
             const svgCheck = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
             const svgEye = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
             const svgEyeOff = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
             const rowBg = '';
             return `<tr class="${row.isHidden ? 'row-hidden' : ''} border-b-2 border-slate-200 ${rowBg}">
-                <td class="px-4 py-2" style="min-width:80px;">
+                <td class="px-4 py-2">
                     <div class="flex flex-col gap-1">
                         <textarea oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; state.sections[${sIdx}].rows[${rIdx}].title=this.value; saveToLocal();" 
                                   class="w-full bg-transparent outline-none font-bold text-slate-700 text-sm resize-none overflow-hidden" 
@@ -359,7 +355,7 @@
                 </td>
                 ${state.classes.map(cls => {
                     const p = row.progress[cls] || {done:false, memo:''};
-                    return `<td class="text-center p-1" style="${needsScroll ? 'min-width:80px; width:80px;' : ''}">
+                    return `<td class="text-center p-1">
                         <div class="flex flex-col items-center gap-1.5 p-1.5 rounded-xl border-2 ${p.done ? 'border-emerald-400' : 'border-slate-100'}">
                             <button onclick="toggleProgress(${sIdx}, ${rIdx}, '${cls}')" class="w-full h-7 rounded-lg flex items-center justify-center transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-300 hover:border-blue-500'}">
                                 ${svgCheck}
@@ -482,7 +478,18 @@
                 btn.innerText = '없는 교시 설정';
             }
             if (hint) hint.classList.add('hidden');
-            state.weeklyData = {};
+            // 마스터 변경 시 각 주의 weeklyData를 새 마스터 기준으로 재구성
+            // modified(직접 수정/자동기록)된 셀은 그대로 유지, 나머지는 새 마스터로 덮어씀
+            for (const key in state.weeklyData) {
+                const wd = state.weeklyData[key];
+                const modified = wd.modified || {};
+                const newTable = JSON.parse(JSON.stringify(state.masterTimetable));
+                for (const pos in modified) {
+                    const [r, c] = pos.split('-').map(Number);
+                    newTable[r][c] = wd.timetable[r][c];
+                }
+                wd.timetable = newTable;
+            }
             saveToLocal();
             document.getElementById('settings-sidebar').classList.add('translate-x-full');
             document.getElementById('settings-overlay').classList.add('hidden');
