@@ -168,7 +168,6 @@
             <section>
                 <div class="flex items-center justify-between mb-3">
                     <label class="text-sm font-bold text-slate-700">마스터 시간표 (기본값)</label>
-                    <!-- 없는 교시 설정 슬라이더 토글 버튼 -->
                     <button id="noclass-mode-btn" onclick="toggleNoClassMode()" class="flex items-center gap-1.5 shrink-0" title="없는 교시 설정">
                         <span id="noclass-mode-label" class="text-[11px] font-bold text-slate-400 whitespace-nowrap">없는 교시 설정</span>
                         <div id="noclass-toggle-track" class="relative w-10 h-5 rounded-full bg-slate-200 transition-colors duration-200">
@@ -201,6 +200,7 @@
     </div>
 
     <script>
+        const NEXT_MARKER = '\u200B'; // 예정 수업 식별용 투명 문자
         let popupSlot = { row: null, col: null };
 
         function handleCellClick(r, c) {
@@ -219,7 +219,7 @@
             const weekKey = getWeekKey(state.currentDate);
             const displayTable = state.weeklyData[weekKey] ? state.weeklyData[weekKey].timetable : state.masterTimetable;
             document.getElementById('cell-popup-header').textContent = DAYS[c] + '요일 ' + (r + 1) + '교시';
-            document.getElementById('cell-popup-textarea').value = displayTable[r][c] || '';
+            document.getElementById('cell-popup-textarea').value = (displayTable[r][c] || '').replace(NEXT_MARKER, '');
             document.getElementById('cell-popup-overlay').classList.add('open');
             setTimeout(() => document.getElementById('cell-popup-textarea').focus(), 80);
         }
@@ -351,13 +351,20 @@
                     const cellColor = isNoClass ? '' : (isModified ? "is-modified-cell" : (hasContent ? "has-master-data" : ""));
                     const slotBg = isNoClass ? 'bg-slate-300' : '';
 
+                    const renderedContent = (content || '').split('\n').map(line => {
+                        if (line.startsWith(NEXT_MARKER)) {
+                            return `<span class="text-[13px] text-slate-500 font-bold block">${line.replace(NEXT_MARKER, '')}</span>`;
+                        }
+                        return `<span class="block">${line}</span>`;
+                    }).join('');
+
                     html += `
                         <div class="h-14 border-r border-b relative timetable-slot ${lunchLine} ${slotBg}" onclick="handleCellClick(${i}, ${j})">
                             <div class="timetable-inner-box ${cellColor} ${isSelected ? 'is-selected' : ''}">
                                 ${isNoClass ? '' :
                                   state.editMode ? 
-                                    `<textarea oninput="updateSlot(${i}, ${j}, this.value)" class="w-full h-full bg-transparent text-sm font-bold text-center resize-none outline-none leading-tight px-0.5 flex items-center">${content || ''}</textarea>` :
-                                    `<span class="text-sm font-bold text-center px-0.5 whitespace-pre-wrap break-all leading-tight">${content || ''}</span>`
+                                    `<textarea oninput="updateSlot(${i}, ${j}, this.value)" class="w-full h-full bg-transparent text-sm font-bold text-center resize-none outline-none leading-tight px-0.5 flex items-center">${(content || '').replace(NEXT_MARKER, '')}</textarea>` :
+                                    `<div class="text-sm font-bold text-center px-0.5 whitespace-pre-wrap break-all leading-tight">${renderedContent}</div>`
                                 }
                             </div>
                         </div>`;
@@ -481,6 +488,19 @@
             </tr>`;
         }
 
+        function findNextClassSlot(startR, startC, className) {
+            for (let j = startC; j < 5; j++) {
+                let startRow = (j === startC) ? startR + 1 : 0;
+                for (let i = startRow; i < 7; i++) {
+                    const masterVal = state.masterTimetable[i][j] || "";
+                    if (masterVal.includes(className)) {
+                        return { r: i, c: j };
+                    }
+                }
+            }
+            return null;
+        }
+
         function toggleProgress(sIdx, rIdx, className) {
             const row = state.sections[sIdx].rows[rIdx];
             if (!row.progress[className]) row.progress[className] = { done: false, memo: '' };
@@ -490,22 +510,62 @@
                 const weekKey = getWeekKey(state.currentDate);
                 if (!state.weeklyData[weekKey]) state.weeklyData[weekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)), modified: {} };
                 if (!state.weeklyData[weekKey].modified) state.weeklyData[weekKey].modified = {};
+                
                 const r = state.selectedSlot.row, c = state.selectedSlot.col;
-                const cellVal = state.weeklyData[weekKey].timetable[r][c];
+                let cellVal = state.weeklyData[weekKey].timetable[r][c] || "";
                 const addVal = row.title || '수업';
 
+                const nextRow = state.sections[sIdx].rows[rIdx + 1];
+                const nextAddVal = nextRow ? (nextRow.title || "") : "";
+                
+                let nextSlot = findNextClassSlot(r, c, className);
+                let targetWeekKey = weekKey;
+
+                if (!nextSlot) {
+                    const nextMon = new Date(getMonday(state.currentDate));
+                    nextMon.setDate(nextMon.getDate() + 7);
+                    targetWeekKey = nextMon.toISOString().split('T')[0];
+                    nextSlot = findNextClassSlot(-1, 0, className); 
+                }
+
                 if (row.progress[className].done) {
-                    if (!cellVal || !cellVal.includes(addVal)) {
-                        state.weeklyData[weekKey].timetable[r][c] = cellVal ? `${cellVal}\n${addVal}` : addVal;
-                        const indicator = document.getElementById('save-indicator');
-                        indicator.innerText = "시간표 자동 기록됨";
-                        indicator.style.opacity = '1';
-                        setTimeout(() => { indicator.style.opacity = '0'; indicator.innerText = "저장됨"; }, 2000);
+                    const scheduledStr = NEXT_MARKER + addVal;
+                    if (cellVal.includes(scheduledStr)) {
+                        cellVal = cellVal.replace(scheduledStr, addVal);
+                    } else if (!cellVal.includes(addVal)) {
+                        cellVal = cellVal ? `${cellVal}\n${addVal}` : addVal;
                     }
+                    state.weeklyData[weekKey].timetable[r][c] = cellVal;
+                    // 자동 완료 기록 시 배경색 변경 플래그를 삭제함 (붉은색 방지)
+                    delete state.weeklyData[weekKey].modified[`${r}-${c}`];
+
+                    if (nextSlot && nextAddVal) {
+                        if (!state.weeklyData[targetWeekKey]) {
+                            state.weeklyData[targetWeekKey] = { timetable: JSON.parse(JSON.stringify(state.masterTimetable)), modified: {} };
+                        }
+                        const nextCellVal = state.weeklyData[targetWeekKey].timetable[nextSlot.r][nextSlot.c] || "";
+                        const nextPlannedStr = NEXT_MARKER + nextAddVal;
+                        if (!nextCellVal.includes(nextPlannedStr)) {
+                            state.weeklyData[targetWeekKey].timetable[nextSlot.r][nextSlot.c] = nextCellVal ? `${nextCellVal}\n${nextPlannedStr}` : nextPlannedStr;
+                        }
+                    }
+                    
+                    const indicator = document.getElementById('save-indicator');
+                    indicator.innerText = "시간표 자동 기록됨";
+                    indicator.style.opacity = '1';
+                    setTimeout(() => { indicator.style.opacity = '0'; indicator.innerText = "저장됨"; }, 2000);
                 } else {
-                    if (cellVal && cellVal.includes(addVal)) {
-                        const newVal = cellVal.split('\n').filter(line => line.trim() !== addVal.trim()).join('\n');
-                        state.weeklyData[weekKey].timetable[r][c] = newVal;
+                    const scheduledStr = NEXT_MARKER + addVal;
+                    state.weeklyData[weekKey].timetable[r][c] = cellVal.split('\n')
+                        .filter(line => line.trim() !== addVal.trim() && line.trim() !== scheduledStr.trim())
+                        .join('\n');
+
+                    if (nextSlot && nextAddVal && state.weeklyData[targetWeekKey]) {
+                        const nextCellVal = state.weeklyData[targetWeekKey].timetable[nextSlot.r][nextSlot.c] || "";
+                        const nextPlannedStr = NEXT_MARKER + nextAddVal;
+                        if (nextCellVal.includes(nextPlannedStr)) {
+                            state.weeklyData[targetWeekKey].timetable[nextSlot.r][nextSlot.c] = nextCellVal.split('\n').filter(line => line.trim() !== nextPlannedStr).join('\n');
+                        }
                     }
                 }
             }
@@ -583,7 +643,6 @@
                 if (ta) state.masterTimetable[i][j] = ta.value;
             }
             
-            // 저장 시 슬라이더 상태 초기화
             if (noClassMode) {
                 noClassMode = false;
                 const label = document.getElementById('noclass-mode-label');
