@@ -283,6 +283,7 @@
                 state.weeklyData = parsed.weeklyData || state.weeklyData;
                 state.sections = (parsed.sections && parsed.sections.length > 0) ? parsed.sections : state.sections;
             }
+            state.currentDate = new Date(); // 앱을 열 때마다 오늘 날짜로 초기화
             renderAll();
         }
 
