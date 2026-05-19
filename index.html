@@ -203,6 +203,12 @@
         const NEXT_MARKER = '\u200B'; // 예정 수업 식별용 투명 문자
         let popupSlot = { row: null, col: null };
 
+        // ★ 수정: includes() 대신 공백/구분자 기준으로 정확히 일치하는 토큰만 매칭
+        // 예) "7반"이 "17반" 셀에 매칭되는 오류를 방지
+        function containsClassName(str, className) {
+            return str.split(/[\s\/,\n]+/).some(token => token === className);
+        }
+
         function handleCellClick(r, c) {
             if (state.editMode) return;
             if (state.masterNoClass[r][c]) return;
@@ -489,12 +495,13 @@
             </tr>`;
         }
 
+        // ★ 수정: includes() → containsClassName() 으로 교체
         function findNextClassSlot(startR, startC, className) {
             for (let j = startC; j < 5; j++) {
                 let startRow = (j === startC) ? startR + 1 : 0;
                 for (let i = startRow; i < 7; i++) {
                     const masterVal = state.masterTimetable[i][j] || "";
-                    if (masterVal.includes(className)) {
+                    if (containsClassName(masterVal, className)) {
                         return { r: i, c: j };
                     }
                 }
@@ -514,6 +521,15 @@
                 
                 const r = state.selectedSlot.row, c = state.selectedSlot.col;
                 let cellVal = state.weeklyData[weekKey].timetable[r][c] || "";
+
+                // ★ 수정: includes() → containsClassName() 으로 교체
+                // 선택된 셀이 실제로 해당 학반의 시간표 셀인지 확인
+                const masterCellVal = state.masterTimetable[r][c] || "";
+                if (!containsClassName(masterCellVal, className)) {
+                    saveToLocal(); renderAll();
+                    return;
+                }
+
                 const addVal = row.title || '수업';
 
                 const nextRow = state.sections[sIdx].rows[rIdx + 1];
